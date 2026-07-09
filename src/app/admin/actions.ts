@@ -47,3 +47,21 @@ export async function editPhoto(formData: FormData) {
   await supabase.from("photos").update({ caption: caption || null, category }).eq("id", id);
   revalidatePath("/admin"); revalidatePath("/gallery");
 }
+
+export async function markEmailRead(formData: FormData) {
+  const { isAdmin, supabase } = await getAdminState();
+  if (!isAdmin) return;
+  const id = String(formData.get("id") || "");
+  if (!id) return;
+  await supabase.from("support_emails").update({ is_read: true }).eq("id", id);
+  revalidatePath("/admin");
+}
+
+export async function deleteEmail(formData: FormData) {
+  const { isAdmin, supabase } = await getAdminState();
+  if (!isAdmin) return;
+  const id = String(formData.get("id") || "");
+  if (!id) return;
+  await supabase.from("support_emails").delete().eq("id", id);
+  revalidatePath("/admin");
+}

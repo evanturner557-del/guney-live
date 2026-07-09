@@ -3,7 +3,7 @@ import { getAdminState } from "@/lib/admin";
 import { getWeather, getAir, getPrayer, getRates, getQuakes } from "@/lib/village";
 import { POIS } from "@/lib/pois";
 import { CATEGORIES } from "@/lib/categories";
-import { removeContent, clearFlag, editPost, editPhoto } from "./actions";
+import { removeContent, clearFlag, editPost, editPhoto, markEmailRead, deleteEmail } from "./actions";
 import OpsRobot from "@/components/OpsRobot";
 import RobotButton from "@/components/RobotButton";
 
@@ -66,6 +66,12 @@ export default async function AdminPage() {
   // --- recent content (for manual moderation + edit) ---
   const { data: recentPosts } = await supabase.from("posts").select("id,type,title,body,author_name,created_at").order("created_at", { ascending: false }).limit(8);
   const { data: recentPhotos } = await supabase.from("photos").select("id,caption,url,category,is_external").order("created_at", { ascending: false }).limit(8);
+
+  // --- support inbox ---
+  const { data: emails, error: emailErr } = await supabase
+    .from("support_emails").select("id,from_addr,from_name,subject,body,is_read,flagged,flag_reason,received_at")
+    .order("received_at", { ascending: false }).limit(30);
+  const unread = (emails ?? []).filter((e) => !e.is_read).length;
 
   const approxPois = POIS.filter((x) => !x.verified);
 
@@ -180,6 +186,42 @@ export default async function AdminPage() {
             </div>
           ))}
         </div>
+      </Section>
+
+      {/* Support inbox */}
+      <Section title={`Inbox — support@guney.live${unread ? ` (${unread} unread)` : ""}`}>
+        {emailErr ? (
+          <p className="text-sm text-faded bg-white border border-sand rounded-xl px-3 py-4">Inbox table not reachable.</p>
+        ) : (emails ?? []).length === 0 ? (
+          <p className="text-sm text-faded bg-white border border-sand rounded-xl px-3 py-4">
+            No messages yet. Once you connect the free email forwarding (steps in chat), mail to support@guney.live lands here.
+          </p>
+        ) : (
+          <div className="space-y-1.5">
+            {(emails ?? []).map((e) => (
+              <details key={e.id} className={`bg-white border rounded-xl group ${e.is_read ? "border-sand" : "border-olive/40"}`}>
+                <summary className="px-3 py-2 flex items-center gap-3 text-sm cursor-pointer list-none">
+                  {!e.is_read && <span className="w-2 h-2 rounded-full bg-olive shrink-0" />}
+                  <span className="font-medium truncate max-w-[10rem]">{e.from_name || e.from_addr}</span>
+                  <span className="flex-1 truncate text-faded">{e.subject}{e.flagged && <span className="text-terra-deep"> ⚑</span>}</span>
+                </summary>
+                <div className="px-3 pb-3 border-t border-sand pt-3">
+                  <p className="text-[11px] text-faded mb-1">{e.from_addr}{e.flag_reason ? ` · ⚑ ${e.flag_reason}` : ""}</p>
+                  <p className="text-sm whitespace-pre-wrap">{e.body}</p>
+                  <div className="flex items-center gap-2 mt-3">
+                    {!e.is_read && (
+                      <form action={markEmailRead}><input type="hidden" name="id" value={e.id} />
+                        <button className="text-[11px] px-2 py-1 rounded-full bg-sage/30 text-olive-deep cursor-pointer">Mark read</button></form>
+                    )}
+                    <a href={`mailto:${e.from_addr}?subject=Re: ${encodeURIComponent(e.subject ?? "")}`} className="text-[11px] px-2 py-1 rounded-full bg-olive text-cream">Reply ↗</a>
+                    <form action={deleteEmail}><input type="hidden" name="id" value={e.id} />
+                      <button className="text-[11px] px-2 py-1 rounded-full bg-terra/10 text-terra-deep hover:bg-terra hover:text-cream transition-colors cursor-pointer">Delete</button></form>
+                  </div>
+                </div>
+              </details>
+            ))}
+          </div>
+        )}
       </Section>
 
       {/* Map pins to fix */}
