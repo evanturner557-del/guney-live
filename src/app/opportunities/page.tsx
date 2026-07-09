@@ -24,7 +24,7 @@ export default async function OpportunitiesPage({
   const { data: opps } = await q;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
+    <div className="max-w-2xl">
       <h1 className="display text-3xl sm:text-4xl font-semibold text-olive-deep">Opportunities</h1>
       <p className="text-faded mt-2">
         What you can build, join or improve in Güney — land, houses, businesses, skills, projects.
@@ -63,20 +63,7 @@ export default async function OpportunitiesPage({
         </p>
       )}
 
-      <div className="flex gap-2 mt-8 mb-4 flex-wrap">
-        <Link href="/opportunities"
-          className={`px-3 py-1.5 rounded-full text-sm border ${active === "all" ? "bg-olive text-cream border-olive" : "border-sand hover:bg-sand"}`}>
-          All
-        </Link>
-        {Object.entries(oppTypeLabel).map(([v, l]) => (
-          <Link key={v} href={`/opportunities?type=${v}`}
-            className={`px-3 py-1.5 rounded-full text-sm border ${active === v ? "bg-olive text-cream border-olive" : "border-sand hover:bg-sand"}`}>
-            {l}
-          </Link>
-        ))}
-      </div>
-
-      <div className="space-y-4">
+      <div className="space-y-4 mt-8">
         {(opps ?? []).length === 0 && <p className="text-faded text-sm py-8">No open opportunities in this category yet.</p>}
         {(opps ?? []).map((o) => (
           <details key={o.id} className="bg-white rounded-xl border border-sand group">

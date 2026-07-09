@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { Md } from "@/components/ui";
+import { NavCard, NavSection, NavAnchor } from "@/components/SideNav";
+
+const catIcon: Record<string, string> = {
+  "getting-here": "🧭", staying: "🛏️", living: "🏡", nature: "🌿", services: "☎️", faq: "❓",
+};
 
 export const revalidate = 3600;
 
@@ -40,14 +45,15 @@ export default async function GuidePage() {
         </p>
       </div>
 
-      <div className="grid md:grid-cols-[200px_1fr] gap-10 mt-10">
-        <nav className="hidden md:block sticky top-20 self-start space-y-1 text-sm">
-          {byCat.map((g) => (
-            <a key={g.cat} href={`#${g.cat}`}
-              className="block px-3 py-2 rounded-lg hover:bg-sand transition-colors">
-              {catMeta[g.cat].title}
-            </a>
-          ))}
+      <div className="grid md:grid-cols-[200px_1fr] gap-6 mt-10">
+        <nav className="hidden md:block sticky top-20 self-start w-full">
+          <NavCard>
+            <NavSection icon="📖" title="Guide">
+              {byCat.map((g) => (
+                <NavAnchor key={g.cat} href={`#${g.cat}`} icon={catIcon[g.cat] ?? "•"} label={catMeta[g.cat].title} />
+              ))}
+            </NavSection>
+          </NavCard>
         </nav>
 
         <div className="space-y-12 max-w-2xl">

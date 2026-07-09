@@ -2,7 +2,9 @@ import {
   Weather, Air, Prayer, Rates, Quakes,
   wmoLabel, wmoIcon, moonPhase, fmtTime, dayName,
 } from "@/lib/village";
+import { timeAgo } from "@/components/ui";
 import LiveCam from "@/components/LiveCam";
+import ExchangeButton from "@/components/ExchangeButton";
 
 function Led({ live }: { live: boolean }) {
   return (
@@ -35,9 +37,16 @@ export function Dashboard({ weather, air, prayer, rates, quakes }: {
   weather: Weather; air: Air; prayer: Prayer; rates: Rates; quakes: Quakes;
 }) {
   const moon = moonPhase();
+  const generatedAt = new Date();
+  const stamp = generatedAt.toLocaleTimeString("en-GB", { timeZone: "Europe/Istanbul", hour: "2-digit", minute: "2-digit" });
   return (
     <section className="mt-4">
-      <h2 className="display text-2xl font-semibold text-olive-deep mb-4">The village, right now</h2>
+      <div className="flex items-baseline justify-between flex-wrap gap-1 mb-4">
+        <h2 className="display text-2xl font-semibold text-olive-deep">The village, right now</h2>
+        <p className="text-[11px] text-faded" title="This page regenerates from live APIs roughly every 30 minutes.">
+          Data refreshed {stamp} · Europe/Istanbul · every ~30 min
+        </p>
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {/* Weather — spans 2 */}
@@ -115,6 +124,7 @@ export function Dashboard({ weather, air, prayer, rates, quakes }: {
               <p className="flex justify-between"><span className="text-faded">$1 USD</span><span>₺{rates.USD.toFixed(2)}</span></p>
             </div>
           ) : <Dead />}
+          <ExchangeButton />
         </Card>
 
         {/* Earthquakes */}
@@ -126,10 +136,13 @@ export function Dashboard({ weather, air, prayer, rates, quakes }: {
               ) : (
                 <div className="space-y-1 text-sm">
                   {quakes.list.slice(0, 3).map((q, i) => (
-                    <p key={i} className="flex justify-between gap-2">
-                      <span className={`font-semibold ${q.mag >= 4 ? "text-terra-deep" : "text-ink"}`}>M{q.mag.toFixed(1)}</span>
-                      <span className="text-faded truncate text-[13px]">{q.place || "nearby"}</span>
-                    </p>
+                    <div key={i} className="flex justify-between gap-2">
+                      <span className="flex items-baseline gap-1.5 min-w-0">
+                        <span className={`font-semibold shrink-0 ${q.mag >= 4 ? "text-terra-deep" : "text-ink"}`}>M{q.mag.toFixed(1)}</span>
+                        <span className="text-faded truncate text-[13px]">{q.place || "nearby"}</span>
+                      </span>
+                      <span className="text-faded text-[11px] shrink-0">{timeAgo(new Date(q.time).toISOString())}</span>
+                    </div>
                   ))}
                 </div>
               )}

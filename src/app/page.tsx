@@ -29,14 +29,29 @@ function Note({ post, tilt }: { post: Post; tilt: number }) {
   );
 }
 
-function PhotoPin({ url, caption, tilt }: { url: string; caption: string; tilt: number }) {
+// ~1/4 the size of the old full-width pin, and used a few at a time, scattered.
+function PhotoPin({ url, caption, tilt, align = "center" }: {
+  url: string; caption: string; tilt: number; align?: "start" | "center" | "end";
+}) {
+  const justify = align === "start" ? "justify-self-start" : align === "end" ? "justify-self-end" : "justify-self-center";
   return (
-    <figure className={`note note-tilt-${tilt} bg-white p-2 pb-3 rounded-sm`}>
+    <figure className={`note note-tilt-${tilt} ${justify} bg-white p-1.5 pb-2 rounded-sm w-28`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={url} alt={caption} loading="lazy" className="w-full h-28 object-cover" />
-      <figcaption className="text-[11px] text-center text-faded mt-1.5">{caption}</figcaption>
+      <img src={url} alt={caption} loading="lazy" className="w-full h-16 object-cover" />
+      <figcaption className="text-[9px] text-center text-faded mt-1 truncate">{caption}</figcaption>
     </figure>
   );
+}
+
+// Fisher-Yates — reshuffles on every regeneration (revalidate=1800), so the
+// pinned photos and their columns vary over time instead of being static.
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 function ColLabel({ children }: { children: React.ReactNode }) {
@@ -76,7 +91,13 @@ export default async function Home() {
     stats[k].count += 1;
     if (!stats[k].cover) stats[k].cover = r.url as string;
   }
-  const pinPhotos = catRows.slice(0, 3).map((r) => ({ url: r.url as string, caption: (r.caption as string) ?? "Salda" }));
+  // Scatter a random handful of photos (any category) across the three columns —
+  // reshuffled each regeneration so it's not the same 3 Salda shots every time.
+  const allPhotos = catRows.map((r) => ({ url: r.url as string, caption: (r.caption as string) ?? "Güney" }));
+  const scattered = shuffle(allPhotos).slice(0, 6);
+  const pinCols: { url: string; caption: string }[][] = [[], [], []];
+  scattered.forEach((p, i) => pinCols[i % 3].push(p));
+  const aligns: ("start" | "center" | "end")[] = ["start", "end", "center"];
 
   return (
     <div>
@@ -131,7 +152,7 @@ export default async function Home() {
               <div className="space-y-4">
                 <ColLabel>Latest from the village</ColLabel>
                 {posts.slice(0, 3).map((p, i) => <Note key={p.id} post={p} tilt={(i % 4) + 1} />)}
-                {pinPhotos[0] && <PhotoPin url={pinPhotos[0].url} caption={pinPhotos[0].caption} tilt={2} />}
+                {pinCols[0].map((p, i) => <PhotoPin key={p.url} url={p.url} caption={p.caption} tilt={((i + 1) % 4) + 1} align={aligns[i % 3]} />)}
                 {posts.slice(3, 5).map((p, i) => <Note key={p.id} post={p} tilt={((i + 2) % 4) + 1} />)}
                 <Link href="/community" className="block text-center text-sm text-cream/90 hover:text-cream underline pt-1">All updates →</Link>
               </div>
@@ -142,7 +163,7 @@ export default async function Home() {
                 {events.length === 0 ? (
                   <div className="note note-tilt-2 rounded-sm px-4 py-6 text-center text-sm text-faded">No events pinned yet.</div>
                 ) : events.map((e, i) => <Note key={e.id} post={e} tilt={(i % 4) + 1} />)}
-                {pinPhotos[1] && <PhotoPin url={pinPhotos[1].url} caption={pinPhotos[1].caption} tilt={4} />}
+                {pinCols[1].map((p, i) => <PhotoPin key={p.url} url={p.url} caption={p.caption} tilt={((i + 3) % 4) + 1} align={aligns[(i + 1) % 3]} />)}
                 <Link href="/community?type=event" className="block text-center text-sm text-cream/90 hover:text-cream underline pt-1">All events →</Link>
               </div>
 
@@ -156,7 +177,7 @@ export default async function Home() {
                     <p className="text-[13px] text-faded mt-1.5 line-clamp-3">{o.summary}</p>
                   </Link>
                 ))}
-                {pinPhotos[2] && <PhotoPin url={pinPhotos[2].url} caption={pinPhotos[2].caption} tilt={1} />}
+                {pinCols[2].map((p, i) => <PhotoPin key={p.url} url={p.url} caption={p.caption} tilt={((i + 2) % 4) + 1} align={aligns[(i + 2) % 3]} />)}
                 <Link href="/opportunities" className="block text-center text-sm text-cream/90 hover:text-cream underline pt-1">All opportunities →</Link>
               </div>
             </div>

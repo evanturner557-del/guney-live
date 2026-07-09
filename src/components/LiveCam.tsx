@@ -2,16 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const CHANNEL = "UCiTRiRl0BOZmM4bZ5mt2f5g"; // Salda Gölü official channel
+// Grayscale TV-static "no signal" texture, generated inline — no external asset.
+const NOISE_URL = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>";
 
-type Item = { kind: "live" | "video" | "note"; id?: string; title: string; note?: string };
+type Item = { kind: "live" | "pending" | "video" | "note"; id?: string; channel?: string; title: string; note?: string };
 type Menu = { key: string; label: string; icon: string; items: Item[] };
 
+// NOTE: the Salda lake cam has no free public embeddable source yet — shown as
+// "no signal" until a real stream is wired up. The Live TV channels below are
+// placeholders pending verified official YouTube channel IDs.
 const MENUS: Menu[] = [
   {
-    key: "live", label: "Live feed", icon: "🔴",
+    key: "live", label: "Live TV", icon: "🔴",
     items: [
-      { kind: "live", title: "Salda Gölü — live", note: "Live when the municipality is streaming." },
+      { kind: "pending", title: "Salda Gölü — lake cam" },
+      { kind: "pending", title: "Turkish channels — loading list…" },
     ],
   },
   {
@@ -37,10 +42,11 @@ const MENUS: Menu[] = [
 ];
 
 function ytSrc(item: Item, playing: boolean) {
-  if (item.kind === "live")
-    return `https://www.youtube.com/embed/live_stream?channel=${CHANNEL}&autoplay=${playing ? 1 : 0}&mute=1&rel=0&enablejsapi=1`;
-  if (item.kind === "video")
-    return `https://www.youtube.com/embed/${item.id}?autoplay=${playing ? 1 : 0}&mute=1&rel=0&enablejsapi=1`;
+  const auto = playing ? 1 : 0;
+  if (item.kind === "live" && item.channel)
+    return `https://www.youtube.com/embed/live_stream?channel=${item.channel}&autoplay=${auto}&mute=1&rel=0&enablejsapi=1`;
+  if ((item.kind === "video" || item.kind === "live") && item.id)
+    return `https://www.youtube.com/embed/${item.id}?autoplay=${auto}&mute=1&rel=0&enablejsapi=1`;
   return "";
 }
 
@@ -63,7 +69,7 @@ export default function LiveCam() {
       JSON.stringify({ event: "command", func: fn, args: [] }), "*");
   }
   function togglePlay() {
-    if (item?.kind === "note") return;
+    if (item?.kind === "note" || item?.kind === "pending") return;
     if (playing) { cmd("pauseVideo"); setPlaying(false); }
     else { cmd("playVideo"); setPlaying(true); }
   }
@@ -107,6 +113,14 @@ export default function LiveCam() {
                         <p className="text-cream font-semibold">{item.title}</p>
                         <p className="text-sage text-xs mt-2 max-w-xs">{item.note}</p>
                       </div>
+                    ) : item?.kind === "pending" ? (
+                      <div className="absolute inset-0 bg-black">
+                        <div className="absolute inset-0" style={{ backgroundImage: `url("${NOISE_URL}")`, backgroundSize: "140px 140px", opacity: 0.85, filter: "contrast(1.5)" }} />
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
+                          <span className="bg-black/75 text-cream text-xs sm:text-sm px-3 py-1.5 rounded tracking-wide">📡 Setup: connect to stream</span>
+                          <span className="text-cream/50 text-[10px]">{item.title}</span>
+                        </div>
+                      </div>
                     ) : (
                       <iframe ref={frameRef} key={`${menu}-${idx}-${playing}`} className="absolute inset-0 w-full h-full"
                         src={ytSrc(item, playing)} title={item.title}
@@ -132,11 +146,6 @@ export default function LiveCam() {
                       </div>
                     )}
                   </div>
-                  <p className="text-cream/60 text-[11px] mt-2 leading-snug">
-                    {item?.title}. The official 24/7 municipal cam is at{" "}
-                    <a href="http://88.250.70.33/" target="_blank" rel="noopener noreferrer" className="underline">88.250.70.33</a>{" "}
-                    (login guney / 1515 — desktop only).
-                  </p>
                 </div>
 
                 {/* Control panel */}
@@ -148,7 +157,7 @@ export default function LiveCam() {
                     className="w-10 h-10 rounded-full bg-[#2a2018] text-cream flex items-center justify-center disabled:opacity-40">☰</button>
                   <button onClick={back} disabled={!power} title="Back"
                     className="w-10 h-10 rounded-full bg-[#2a2018] text-cream flex items-center justify-center disabled:opacity-40">⏮</button>
-                  <button onClick={togglePlay} disabled={!power || item?.kind === "note"} title="Play/Pause"
+                  <button onClick={togglePlay} disabled={!power || item?.kind === "note" || item?.kind === "pending"} title="Play/Pause"
                     className="w-10 h-10 rounded-full bg-[#2a2018] text-cream flex items-center justify-center disabled:opacity-40">{playing ? "⏸" : "▶"}</button>
                   <button onClick={next} disabled={!power} title="Next"
                     className="w-10 h-10 rounded-full bg-[#2a2018] text-cream flex items-center justify-center disabled:opacity-40">⏭</button>
