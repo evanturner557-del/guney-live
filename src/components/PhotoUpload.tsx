@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function PhotoUpload({ userId }: { userId: string }) {
+export default function PhotoUpload({ userId, category = "village" }: { userId: string; category?: string }) {
   const router = useRouter();
   const [caption, setCaption] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -22,7 +22,7 @@ export default function PhotoUpload({ userId }: { userId: string }) {
     if (upErr) { setErr(upErr.message); setState("err"); return; }
     const { data: pub } = supabase.storage.from("photos").getPublicUrl(path);
     const { error: insErr } = await supabase.from("photos").insert({
-      url: pub.publicUrl, caption: caption.trim() || null,
+      url: pub.publicUrl, caption: caption.trim() || null, category,
       credit: "Community", is_external: false, uploaded_by: userId,
     });
     if (insErr) { setErr(insErr.message); setState("err"); return; }

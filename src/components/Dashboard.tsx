@@ -2,6 +2,7 @@ import {
   Weather, Air, Prayer, Rates, Quakes,
   wmoLabel, wmoIcon, moonPhase, fmtTime, dayName,
 } from "@/lib/village";
+import LiveCam from "@/components/LiveCam";
 
 function Card({ title, icon, children, className = "" }: {
   title: string; icon?: string; children: React.ReactNode; className?: string;
@@ -120,17 +121,7 @@ export function Dashboard({ weather, air, prayer, rates, quakes }: {
         )}
 
         {/* Live camera — honest link-out */}
-        <a href="https://saldagolu.gov.tr/saldagolu/canli.html" target="_blank" rel="noopener noreferrer"
-          className="bg-olive-deep text-cream rounded-2xl p-4 flex flex-col justify-between hover:bg-olive transition-colors col-span-2 md:col-span-1">
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm">📹</span>
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-sage">Live Salda camera</h3>
-          </div>
-          <div className="mt-2">
-            <p className="text-sm leading-snug">Watch Lake Salda live, 24/7 — official government stream.</p>
-            <p className="text-xs text-sage mt-2">Open camera →</p>
-          </div>
-        </a>
+        <LiveCam />
       </div>
     </section>
   );
