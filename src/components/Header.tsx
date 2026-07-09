@@ -11,7 +11,7 @@ const links = [
   { href: "/guide", label: "Guide" },
 ];
 
-export default function Header({ signedIn, name }: { signedIn: boolean; name: string | null }) {
+export default function Header({ signedIn, name, isAdmin }: { signedIn: boolean; name: string | null; isAdmin?: boolean }) {
   const [menu, setMenu] = useState(false);
   const [acct, setAcct] = useState(false);
   const initial = (name?.[0] ?? "").toUpperCase();
@@ -69,6 +69,9 @@ export default function Header({ signedIn, name }: { signedIn: boolean; name: st
               <div className="absolute right-0 mt-2 w-44 bg-white rounded-xl border border-sand shadow-lg py-1.5 z-40">
                 <p className="px-4 py-1.5 text-xs text-faded truncate">{name ?? "Member"}</p>
                 <Link href="/members" onClick={close} className="block px-4 py-2.5 text-sm hover:bg-sand transition-colors">My profile</Link>
+                {isAdmin && (
+                  <Link href="/admin" onClick={close} className="block px-4 py-2.5 text-sm hover:bg-sand transition-colors text-olive-deep font-medium">⚙ Operations</Link>
+                )}
                 <form action={signOut}>
                   <button className="w-full text-left px-4 py-2.5 text-sm hover:bg-sand transition-colors cursor-pointer">Sign out</button>
                 </form>

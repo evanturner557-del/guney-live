@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { screenText } from "@/lib/moderation";
 
 export async function signOut() {
   const supabase = await createClient();
@@ -20,10 +21,12 @@ export async function createPost(formData: FormData) {
   const eventDate = String(formData.get("event_date") || "");
   const eventLocation = String(formData.get("event_location") || "").trim();
   if (!title || !body) return;
+  const scr = screenText(title, body);
   await supabase.from("posts").insert({
     author_id: user.id, type, title, body,
     event_date: type === "event" && eventDate ? new Date(eventDate).toISOString() : null,
     event_location: type === "event" && eventLocation ? eventLocation : null,
+    flagged: scr.flagged, flag_reason: scr.reason,
   });
   revalidatePath("/community"); revalidatePath("/");
 }
@@ -79,10 +82,11 @@ export async function createListing(formData: FormData) {
   const contact = String(formData.get("contact") || "").trim();
   if (!title) return;
   const { data: prof } = await supabase.from("profiles").select("name").eq("id", user.id).maybeSingle();
+  const scr = screenText(title, description);
   await supabase.from("listings").insert({
     seller_id: user.id, seller_name: prof?.name ?? null, kind, title,
     description: description || null, price: priceRaw ? Number(priceRaw) : null,
-    contact: contact || null,
+    contact: contact || null, flagged: scr.flagged, flag_reason: scr.reason,
   });
   revalidatePath("/community/marketplace");
 }

@@ -1,0 +1,207 @@
+import Link from "next/link";
+import { getAdminState } from "@/lib/admin";
+import { getWeather, getAir, getPrayer, getRates, getQuakes } from "@/lib/village";
+import { POIS } from "@/lib/pois";
+import { removeContent, clearFlag } from "./actions";
+
+export const dynamic = "force-dynamic";
+
+async function timed<T>(fn: () => Promise<T>): Promise<{ ok: boolean; ms: number }> {
+  const t = Date.now();
+  try { const r = await fn(); return { ok: r != null, ms: Date.now() - t }; }
+  catch { return { ok: false, ms: Date.now() - t }; }
+}
+
+function Dot({ ok }: { ok: boolean }) {
+  return <span className={`led ${ok ? "led-live" : "led-dead"}`} aria-hidden />;
+}
+
+function RemoveBtn({ table, id }: { table: string; id: string }) {
+  return (
+    <form action={removeContent}>
+      <input type="hidden" name="table" value={table} />
+      <input type="hidden" name="id" value={id} />
+      <button className="text-[11px] px-2 py-1 rounded-full bg-terra/10 text-terra-deep hover:bg-terra hover:text-cream transition-colors cursor-pointer">Remove</button>
+    </form>
+  );
+}
+function ApproveBtn({ table, id }: { table: string; id: string }) {
+  return (
+    <form action={clearFlag}>
+      <input type="hidden" name="table" value={table} />
+      <input type="hidden" name="id" value={id} />
+      <button className="text-[11px] px-2 py-1 rounded-full bg-sage/30 text-olive-deep hover:bg-olive hover:text-cream transition-colors cursor-pointer">Approve</button>
+    </form>
+  );
+}
+
+export default async function AdminPage() {
+  const { user, isAdmin, supabase } = await getAdminState();
+
+  if (!user) {
+    return <Shell><p className="text-faded">Please <Link href="/join" className="text-terra underline">sign in</Link> to access the operations panel.</p></Shell>;
+  }
+  if (!isAdmin) {
+    return <Shell><p className="text-faded">This area is for administrators only.</p></Shell>;
+  }
+
+  // --- live feed health ---
+  const [w, a, p, r, q] = await Promise.all([
+    timed(getWeather), timed(getAir), timed(getPrayer), timed(getRates), timed(getQuakes),
+  ]);
+  const feeds = [
+    { name: "Weather (Open-Meteo)", ...w }, { name: "Air quality (Open-Meteo)", ...a },
+    { name: "Prayer times (AlAdhan)", ...p }, { name: "Exchange (open.er-api)", ...r },
+    { name: "Earthquakes (USGS)", ...q },
+  ];
+  const embeds = [
+    { name: "Salda lake cam", ok: false, note: "no free feed — 'connect to stream' placeholder" },
+    { name: "Live TV (TRT + private HLS)", ok: true, note: "auto-skips dead channels" },
+    { name: "Local videos / music / film (YouTube)", ok: true, note: "" },
+  ];
+
+  // --- content counts ---
+  const tables = ["profiles", "posts", "opportunities", "photos", "listings", "messages"] as const;
+  const counts = Object.fromEntries(await Promise.all(tables.map(async (t) => {
+    const { count } = await supabase.from(t).select("*", { count: "exact", head: true });
+    return [t, count ?? 0] as const;
+  })));
+
+  // --- review queue (flagged by the auto-publish screen) ---
+  const [fp, fph, fl] = await Promise.all([
+    supabase.from("posts").select("id,title,body,flag_reason,author_name").eq("flagged", true).limit(20),
+    supabase.from("photos").select("id,caption,url,flag_reason").eq("flagged", true).limit(20),
+    supabase.from("listings").select("id,title,description,flag_reason,seller_name").eq("flagged", true).limit(20),
+  ]);
+  const flagged = [
+    ...(fp.data ?? []).map((x) => ({ table: "posts", id: x.id, title: x.title, sub: x.body?.slice(0, 80), who: x.author_name, reason: x.flag_reason })),
+    ...(fph.data ?? []).map((x) => ({ table: "photos", id: x.id, title: x.caption || "photo", sub: x.url, who: null, reason: x.flag_reason })),
+    ...(fl.data ?? []).map((x) => ({ table: "listings", id: x.id, title: x.title, sub: x.description?.slice(0, 80), who: x.seller_name, reason: x.flag_reason })),
+  ];
+
+  // --- recent content (for manual moderation) ---
+  const { data: recentPosts } = await supabase.from("posts").select("id,type,title,author_name,created_at").order("created_at", { ascending: false }).limit(8);
+  const { data: recentPhotos } = await supabase.from("photos").select("id,caption,url,category,is_external").order("created_at", { ascending: false }).limit(8);
+
+  const approxPois = POIS.filter((x) => !x.verified);
+
+  return (
+    <Shell>
+      <div className="flex items-baseline justify-between flex-wrap gap-2">
+        <h1 className="display text-3xl font-semibold text-olive-deep">Operations</h1>
+        <p className="text-sm text-faded">Signed in as {user.email}</p>
+      </div>
+
+      {/* Live status */}
+      <Section title="Live feeds — what's alive / dead">
+        <div className="grid sm:grid-cols-2 gap-2">
+          {feeds.map((f) => (
+            <div key={f.name} className="flex items-center gap-2 bg-white border border-sand rounded-xl px-3 py-2 text-sm">
+              <Dot ok={f.ok} />
+              <span className="flex-1">{f.name}</span>
+              <span className="text-[11px] text-faded">{f.ok ? `${f.ms}ms` : "down"}</span>
+            </div>
+          ))}
+          {embeds.map((f) => (
+            <div key={f.name} className="flex items-center gap-2 bg-white border border-sand rounded-xl px-3 py-2 text-sm">
+              <Dot ok={f.ok} />
+              <span className="flex-1">{f.name}{f.note && <span className="text-[11px] text-faded"> · {f.note}</span>}</span>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      {/* Content counts */}
+      <Section title="Content">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          {tables.map((t) => (
+            <div key={t} className="bg-white border border-sand rounded-xl px-3 py-3 text-center">
+              <p className="display text-2xl font-semibold text-olive-deep">{counts[t]}</p>
+              <p className="text-[11px] text-faded capitalize">{t}</p>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      {/* Review queue */}
+      <Section title={`Review queue — flagged by the auto-publish screen (${flagged.length})`}>
+        {flagged.length === 0 ? (
+          <p className="text-sm text-faded bg-white border border-sand rounded-xl px-3 py-4">Nothing flagged. Clean content publishes automatically; anything suspicious lands here.</p>
+        ) : (
+          <div className="space-y-2">
+            {flagged.map((x) => (
+              <div key={`${x.table}-${x.id}`} className="bg-white border border-terra/40 rounded-xl px-3 py-2.5 flex items-start gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{x.title}</p>
+                  <p className="text-[12px] text-faded truncate">{x.sub}</p>
+                  <p className="text-[11px] text-terra-deep mt-0.5">⚑ {x.reason}{x.who ? ` · by ${x.who}` : ""} · {x.table}</p>
+                </div>
+                <div className="flex flex-col gap-1 shrink-0">
+                  <ApproveBtn table={x.table} id={x.id} />
+                  <RemoveBtn table={x.table} id={x.id} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+
+      {/* Recent posts */}
+      <Section title="Recent posts">
+        <div className="space-y-1.5">
+          {(recentPosts ?? []).map((x) => (
+            <div key={x.id} className="bg-white border border-sand rounded-xl px-3 py-2 flex items-center gap-3 text-sm">
+              <span className="text-[10px] uppercase text-faded w-14 shrink-0">{x.type}</span>
+              <span className="flex-1 truncate">{x.title}</span>
+              <span className="text-[11px] text-faded hidden sm:block">{x.author_name}</span>
+              <RemoveBtn table="posts" id={x.id} />
+            </div>
+          ))}
+          {(recentPosts ?? []).length === 0 && <p className="text-sm text-faded">No posts yet.</p>}
+        </div>
+      </Section>
+
+      {/* Recent photos */}
+      <Section title="Recent photos">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {(recentPhotos ?? []).map((x) => (
+            <div key={x.id} className="bg-white border border-sand rounded-xl overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={x.url} alt={x.caption ?? ""} className="w-full h-24 object-cover" />
+              <div className="p-2">
+                <p className="text-[11px] text-faded truncate">{x.category} · {x.is_external ? "external" : "member"}</p>
+                <div className="mt-1"><RemoveBtn table="photos" id={x.id} /></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      {/* Map pins to fix */}
+      <Section title={`Map pins needing exact coordinates (${approxPois.length})`}>
+        <p className="text-[12px] text-faded mb-2">These have no public geodata. Open each in Google Maps, right-click the exact spot → &quot;copy coordinates&quot;, and send them to have the pin locked as verified.</p>
+        <div className="grid sm:grid-cols-2 gap-2">
+          {approxPois.map((x) => (
+            <div key={x.key} className="bg-white border border-sand rounded-xl px-3 py-2 text-sm flex items-center gap-2">
+              <span>{x.emoji}</span>
+              <span className="flex-1">{x.name}</span>
+              <span className="text-[11px] text-faded">{x.lat.toFixed(3)}, {x.lng.toFixed(3)} <span className="text-terra-deep">≈</span></span>
+            </div>
+          ))}
+        </div>
+      </Section>
+    </Shell>
+  );
+}
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return <div className="mx-auto max-w-4xl px-4 py-10 space-y-8">{children}</div>;
+}
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-faded mb-2">{title}</h2>
+      {children}
+    </section>
+  );
+}
