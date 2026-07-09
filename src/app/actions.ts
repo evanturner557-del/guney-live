@@ -71,9 +71,10 @@ export async function updateProfile(formData: FormData) {
   const bio = String(formData.get("bio") || "").trim();
   const connection = String(formData.get("connection") || "newcomer");
   const skills = String(formData.get("skills") || "").trim();
+  const phone = String(formData.get("phone") || "").trim();
   if (!name) return;
-  await supabase.from("profiles").upsert({ id: user.id, name, bio: bio || null, connection, skills: skills || null });
-  revalidatePath("/members");
+  await supabase.from("profiles").upsert({ id: user.id, name, bio: bio || null, connection, skills: skills || null, phone: phone || null });
+  revalidatePath("/members"); revalidatePath("/dashboard");
 }
 
 export async function createListing(formData: FormData) {

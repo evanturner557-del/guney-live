@@ -14,10 +14,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const { data: { user } } = await supabase.auth.getUser();
   let name: string | null = null;
   let isAdmin = false;
+  let avatarUrl: string | null = null;
   if (user) {
-    const { data } = await supabase.from("profiles").select("name, is_admin").eq("id", user.id).maybeSingle();
+    const { data } = await supabase.from("profiles").select("name, is_admin, avatar_url").eq("id", user.id).maybeSingle();
     name = data?.name ?? null;
     isAdmin = Boolean(data?.is_admin);
+    avatarUrl = data?.avatar_url ?? null;
   }
 
   return (
@@ -28,7 +30,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Inter:wght@400..700&display=swap" rel="stylesheet" />
       </head>
       <body className="min-h-screen flex flex-col">
-        <Header signedIn={!!user} name={name} isAdmin={isAdmin} />
+        <Header signedIn={!!user} name={name} isAdmin={isAdmin} avatarUrl={avatarUrl} />
         <main className="flex-1">{children}</main>
         <footer className="border-t border-sand mt-16">
           <div className="mx-auto max-w-5xl px-4 py-8 text-sm text-faded flex flex-wrap gap-4 justify-between">

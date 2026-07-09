@@ -11,7 +11,7 @@ const links = [
   { href: "/guide", label: "Guide" },
 ];
 
-export default function Header({ signedIn, name, isAdmin }: { signedIn: boolean; name: string | null; isAdmin?: boolean }) {
+export default function Header({ signedIn, name, isAdmin, avatarUrl }: { signedIn: boolean; name: string | null; isAdmin?: boolean; avatarUrl?: string | null }) {
   const [menu, setMenu] = useState(false);
   const [acct, setAcct] = useState(false);
   const initial = (name?.[0] ?? "").toUpperCase();
@@ -54,8 +54,11 @@ export default function Header({ signedIn, name, isAdmin }: { signedIn: boolean;
           <div className="relative">
             {signedIn ? (
               <button onClick={() => { setAcct((a) => !a); setMenu(false); }} aria-label="Account"
-                className="w-9 h-9 rounded-full bg-olive text-cream flex items-center justify-center font-semibold cursor-pointer hover:bg-olive-deep transition-colors">
-                {initial || "•"}
+                className="w-9 h-9 rounded-full bg-olive text-cream flex items-center justify-center font-semibold cursor-pointer hover:bg-olive-deep transition-colors overflow-hidden">
+                {avatarUrl
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={avatarUrl} alt={name ?? "me"} className="w-full h-full object-cover" />
+                  : (initial || "•")}
               </button>
             ) : (
               <Link href="/join" onClick={close} aria-label="Join"
@@ -68,7 +71,8 @@ export default function Header({ signedIn, name, isAdmin }: { signedIn: boolean;
             {signedIn && acct && (
               <div className="absolute right-0 mt-2 w-44 bg-white rounded-xl border border-sand shadow-lg py-1.5 z-40">
                 <p className="px-4 py-1.5 text-xs text-faded truncate">{name ?? "Member"}</p>
-                <Link href="/members" onClick={close} className="block px-4 py-2.5 text-sm hover:bg-sand transition-colors">My profile</Link>
+                <Link href="/dashboard" onClick={close} className="block px-4 py-2.5 text-sm hover:bg-sand transition-colors">My dashboard</Link>
+                <Link href="/members" onClick={close} className="block px-4 py-2.5 text-sm hover:bg-sand transition-colors">Members</Link>
                 {isAdmin && (
                   <Link href="/admin" onClick={close} className="block px-4 py-2.5 text-sm hover:bg-sand transition-colors text-olive-deep font-medium">⚙ Operations</Link>
                 )}
