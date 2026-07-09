@@ -5,6 +5,7 @@ import {
 import { timeAgo } from "@/components/ui";
 import LiveCam from "@/components/LiveCam";
 import ExchangeButton from "@/components/ExchangeButton";
+import WeatherScene, { timePhase } from "@/components/WeatherScene";
 
 function Led({ live }: { live: boolean }) {
   return (
@@ -39,6 +40,10 @@ export function Dashboard({ weather, air, prayer, rates, quakes }: {
   const moon = moonPhase();
   const generatedAt = new Date();
   const stamp = generatedAt.toLocaleTimeString("en-GB", { timeZone: "Europe/Istanbul", hour: "2-digit", minute: "2-digit" });
+  // current Istanbul minute-of-day, for the weather scene's time-of-day sky
+  const istHM = generatedAt.toLocaleTimeString("en-GB", { timeZone: "Europe/Istanbul", hour: "2-digit", minute: "2-digit", hour12: false });
+  const nowMin = Number(istHM.slice(0, 2)) * 60 + Number(istHM.slice(3, 5));
+  const phase = weather ? timePhase(weather.today.sunrise, weather.today.sunset, nowMin) : "day";
   return (
     <section className="mt-4">
       <div className="flex items-baseline justify-between flex-wrap gap-1 mb-4">
@@ -49,29 +54,41 @@ export function Dashboard({ weather, air, prayer, rates, quakes }: {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {/* Weather — spans 2 */}
-        <Card title="Weather" icon={weather ? wmoIcon(weather.now.code, weather.now.isDay) : "⛅"} live={Boolean(weather)} className="col-span-2">
-          {weather ? (
-            <>
+        {/* Weather — spans 2, animated sky */}
+        {weather ? (
+          <div className="relative rounded-2xl border border-sand overflow-hidden col-span-2 text-white">
+            <WeatherScene code={weather.now.code} phase={phase} />
+            {/* readability scrim */}
+            <div className="absolute inset-0 bg-black/15" aria-hidden />
+            <div className="relative p-4">
+              <div className="flex items-center gap-1.5 mb-2">
+                <span className="text-sm">{wmoIcon(weather.now.code, weather.now.isDay)}</span>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-white/80">Weather</h3>
+                <span className="ml-auto flex items-center" title="Live"><span className="led led-live" aria-hidden /></span>
+              </div>
               <div className="flex items-end gap-3">
-                <span className="display text-4xl font-semibold leading-none">{Math.round(weather.now.temp)}°</span>
-                <div className="text-sm text-faded pb-0.5">
-                  <p className="text-ink">{wmoLabel(weather.now.code)}</p>
-                  <p>{Math.round(weather.today.min)}–{Math.round(weather.today.max)}° · 💨 {Math.round(weather.now.wind)} km/h</p>
+                <span className="display text-4xl font-semibold leading-none drop-shadow">{Math.round(weather.now.temp)}°</span>
+                <div className="text-sm pb-0.5 drop-shadow-sm">
+                  <p>{wmoLabel(weather.now.code)}</p>
+                  <p className="text-white/85">{Math.round(weather.today.min)}–{Math.round(weather.today.max)}° · 💨 {Math.round(weather.now.wind)} km/h</p>
                 </div>
               </div>
-              <div className="flex justify-between mt-3 pt-3 border-t border-sand">
+              <div className="flex justify-between mt-3 pt-3 border-t border-white/25">
                 {weather.daily.slice(1, 6).map((d) => (
-                  <div key={d.date} className="text-center">
-                    <p className="text-[11px] text-faded">{dayName(d.date)}</p>
+                  <div key={d.date} className="text-center drop-shadow-sm">
+                    <p className="text-[11px] text-white/80">{dayName(d.date)}</p>
                     <p className="text-base leading-tight">{wmoIcon(d.code)}</p>
-                    <p className="text-[11px]"><span className="text-ink">{Math.round(d.max)}°</span> <span className="text-faded">{Math.round(d.min)}°</span></p>
+                    <p className="text-[11px]"><span>{Math.round(d.max)}°</span> <span className="text-white/70">{Math.round(d.min)}°</span></p>
                   </div>
                 ))}
               </div>
-            </>
-          ) : <Dead label="Weather feed unavailable right now." />}
-        </Card>
+            </div>
+          </div>
+        ) : (
+          <Card title="Weather" icon="⛅" live={false} className="col-span-2">
+            <Dead label="Weather feed unavailable right now." />
+          </Card>
+        )}
 
         {/* Sun & Moon */}
         <Card title="Sun & moon" icon="🌅" live={Boolean(weather)}>

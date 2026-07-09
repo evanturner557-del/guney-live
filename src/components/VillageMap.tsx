@@ -41,18 +41,22 @@ export default function VillageMap({
       const map = L.map(ref.current, { scrollWheelZoom: false }).setView(center, zoom);
       mapRef.current = map;
       tileRef.current = L.tileLayer(layers.street.url, { attribution: layers.street.attr, maxZoom: 17 }).addTo(map);
-      const icon = (emoji: string) => L.divIcon({
-        html: `<div style="font-size:22px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))">${emoji}</div>`,
-        className: "", iconSize: [26, 26], iconAnchor: [13, 13],
+      const icon = (emoji: string, verified: boolean) => L.divIcon({
+        html: `<div style="font-size:22px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5));${verified ? "" : "opacity:.6"}">${emoji}${verified ? "" : "<span style='font-size:10px'>❓</span>"}</div>`,
+        className: "", iconSize: [30, 26], iconAnchor: [13, 13],
       });
       for (const p of pois) {
-        L.marker([p.lat, p.lng], { icon: icon(p.emoji) }).addTo(map).bindPopup(
+        const note = p.verified
+          ? ""
+          : `<p style="margin:4px 0 0;font-size:11px;color:#b85c38">📍 Approximate — know the exact spot? Add a photo with the location and we'll pin it.</p>`;
+        L.marker([p.lat, p.lng], { icon: icon(p.emoji, p.verified) }).addTo(map).bindPopup(
           `<div style="min-width:150px">
              <b>${p.emoji} ${p.name}</b>
              <p style="margin:4px 0;font-size:12px;color:#555">${p.desc}</p>
              <a href="/gallery/${p.cat}" style="color:#b85c38;font-size:12px">Photos →</a>
              &nbsp;·&nbsp;
              <a href="${dirUrl(p.q)}" target="_blank" rel="noopener" style="color:#b85c38;font-size:12px">Directions ↗</a>
+             ${note}
            </div>`
         );
       }

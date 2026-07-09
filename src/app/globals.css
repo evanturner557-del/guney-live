@@ -70,3 +70,46 @@ h1, h2, h3, .display {
 .led-live { color: #22c55e; }
 .led-dead { color: #dc2626; }
 .note-tilt-4 { transform: rotate(0.9deg); }
+
+/* ---- Animated weather scene ---- */
+.ws { position: absolute; inset: 0; overflow: hidden; }
+.ws-stars { position: absolute; inset: 0; }
+.ws-star { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff; opacity: .8; animation: ws-twinkle 3s ease-in-out infinite; }
+@keyframes ws-twinkle { 0%,100% { opacity: .25; } 50% { opacity: .95; } }
+
+.ws-sun {
+  position: absolute; top: 14px; right: 20px; width: 42px; height: 42px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #fff6c8, #ffd24a 60%, #ffb020 100%);
+  box-shadow: 0 0 22px 8px rgba(255,206,74,.55);
+  animation: ws-sun-pulse 4.5s ease-in-out infinite;
+}
+@keyframes ws-sun-pulse { 0%,100% { box-shadow: 0 0 18px 6px rgba(255,206,74,.5); } 50% { box-shadow: 0 0 30px 12px rgba(255,206,74,.7); } }
+.ws-moon {
+  position: absolute; top: 14px; right: 22px; width: 34px; height: 34px; border-radius: 50%;
+  background: radial-gradient(circle at 65% 35%, #fdfdf0, #d8dceb 70%, #b9c0d6 100%);
+  box-shadow: 0 0 16px 4px rgba(220,228,255,.35), inset -6px -3px 0 -2px rgba(150,160,190,.5);
+}
+
+.ws-cloud { position: absolute; height: 26px; border-radius: 999px; background: rgba(255,255,255,.85);
+  box-shadow: 0 6px 14px rgba(0,0,0,.12); filter: blur(.3px); }
+.ws-cloud::before, .ws-cloud::after { content: ""; position: absolute; bottom: 0; border-radius: 50%; background: inherit; }
+.ws-cloud::before { width: 26px; height: 26px; left: 14px; top: -12px; }
+.ws-cloud::after { width: 20px; height: 20px; right: 14px; top: -8px; }
+.ws-cloud-a { width: 70px; top: 16px; left: -80px; opacity: .9; animation: ws-drift 26s linear infinite; }
+.ws-cloud-b { width: 54px; top: 40px; left: -80px; opacity: .7; animation: ws-drift 34s linear infinite 4s; }
+.ws-cloud-c { width: 46px; top: 8px; left: -80px; opacity: .55; animation: ws-drift 44s linear infinite 10s; }
+@keyframes ws-drift { from { transform: translateX(0); } to { transform: translateX(360px); } }
+
+.ws-precip { position: absolute; inset: 0; }
+.ws-rain { position: absolute; top: -12%; width: 1.5px; height: 14px; background: linear-gradient(rgba(200,225,255,0), rgba(200,225,255,.8));
+  animation: ws-fall 0.75s linear infinite; }
+@keyframes ws-fall { from { transform: translateY(-10px); } to { transform: translateY(240px); } }
+.ws-snow { position: absolute; top: -8%; width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.9);
+  animation: ws-snow-fall 4s linear infinite; }
+@keyframes ws-snow-fall { 0% { transform: translate(0,-10px); } 100% { transform: translate(10px,230px); } }
+.ws-flash { position: absolute; inset: 0; background: rgba(255,255,240,.85); opacity: 0; animation: ws-flash 6s linear infinite; }
+@keyframes ws-flash { 0%,92%,100% { opacity: 0; } 93% { opacity: .7; } 95% { opacity: 0; } 96% { opacity: .5; } 97% { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ws-star, .ws-sun, .ws-cloud-a, .ws-cloud-b, .ws-cloud-c, .ws-rain, .ws-snow, .ws-flash { animation: none; }
+}

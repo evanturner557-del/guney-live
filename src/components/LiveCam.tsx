@@ -1,53 +1,45 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import HlsPlayer from "@/components/HlsPlayer";
 
 // Grayscale TV-static "no signal" texture, generated inline — no external asset.
 const NOISE_URL = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>";
 
-type Item = { kind: "live" | "pending" | "video" | "note"; id?: string; channel?: string; title: string; note?: string };
+type Item =
+  | { kind: "hls"; src: string; title: string }
+  | { kind: "video"; id: string; title: string }
+  | { kind: "pending"; title: string };
 type Menu = { key: string; label: string; icon: string; items: Item[] };
 
-// NOTE: the Salda lake cam has no free public embeddable source yet — shown as
-// "no signal" until a real stream is wired up. Everything else below is a
-// verified, currently-live-maintained official YouTube channel/video — no
-// scraped or unofficially rehosted content.
+// Live TV: TRT official first-party HLS (24/7, reachable outside Turkey), then
+// major private channels via their own CDNs. Dead/geo-blocked ones auto-skip.
+const LIVE: Item[] = [
+  { kind: "pending", title: "Salda Gölü — lake cam" },
+  { kind: "hls", src: "https://tv-trt1.medya.trt.com.tr/master.m3u8", title: "TRT 1" },
+  { kind: "hls", src: "https://tv-trthaber.medya.trt.com.tr/master.m3u8", title: "TRT Haber" },
+  { kind: "hls", src: "https://tv-trtbelgesel.medya.trt.com.tr/master.m3u8", title: "TRT Belgesel" },
+  { kind: "hls", src: "https://tv-trtcocuk.medya.trt.com.tr/master.m3u8", title: "TRT Çocuk" },
+  { kind: "hls", src: "https://tv-trtmuzik.medya.trt.com.tr/master.m3u8", title: "TRT Müzik" },
+  { kind: "hls", src: "https://tv-trtworld.medya.trt.com.tr/master.m3u8", title: "TRT World" },
+  { kind: "hls", src: "https://tv-trtavaz.medya.trt.com.tr/master.m3u8", title: "TRT Avaz" },
+  { kind: "hls", src: "https://tv-trtturk.medya.trt.com.tr/master.m3u8", title: "TRT Türk" },
+  { kind: "hls", src: "https://demiroren.daioncdn.net/kanald/kanald.m3u8?app=kanald_web&ce=3", title: "Kanal D" },
+  { kind: "hls", src: "https://tv8.daioncdn.net/tv8/tv8.m3u8?app=7ddc255a-ef47-4e81-ab14-c0e5f2949788&ce=3", title: "TV8" },
+  { kind: "hls", src: "https://demiroren-live.daioncdn.net/teve2/teve2.m3u8", title: "Teve2" },
+  { kind: "hls", src: "https://beyaztv.daioncdn.net/beyaztv/beyaztv.m3u8?app=fcd5c66b-da9d-44ba-a410-4f34805c397d&ce=3", title: "Beyaz TV" },
+  { kind: "hls", src: "https://ciner-live.daioncdn.net/haberturktv/haberturktv.m3u8", title: "Habertürk" },
+  { kind: "hls", src: "https://halktv-live.daioncdn.net/halktv/halktv.m3u8", title: "Halk TV" },
+  { kind: "hls", src: "https://ciner-live.daioncdn.net/bloomberght/bloomberght.m3u8", title: "Bloomberg HT" },
+  { kind: "hls", src: "https://tele1-live.ercdn.net/tele1/tele1.m3u8", title: "Tele 1" },
+  { kind: "hls", src: "https://tv100-live.daioncdn.net/tv100/tv100.m3u8", title: "TV100" },
+  { kind: "hls", src: "https://dogus-live.daioncdn.net/kralpoptv/playlist.m3u8", title: "Kral Pop" },
+  { kind: "hls", src: "https://livetv.powerapp.com.tr/powerturkTV/powerturkhd.smil/playlist.m3u8", title: "PowerTürk" },
+  { kind: "hls", src: "https://tgn.bozztv.com/dvrfl05/gin-minikacocuk/index.m3u8", title: "Minika Çocuk" },
+];
+
 const MENUS: Menu[] = [
-  {
-    key: "live", label: "Live TV", icon: "🔴",
-    items: [
-      { kind: "pending", title: "Salda Gölü — lake cam" },
-      { kind: "live", channel: "UCvFudBDDILdDljN4VIZ4Msw", title: "TRT 1" },
-      { kind: "live", channel: "UCBgTP2LOFVPmq15W-RH-WXA", title: "TRT Haber" },
-      { kind: "live", channel: "UCfYNqluOf8EbQkL44otydMw", title: "TRT Spor" },
-      { kind: "live", channel: "UCdVBWUBCuREx1Q2Ikw9R8Mw", title: "TRT Belgesel" },
-      { kind: "live", channel: "UCA9hDdBlGptiL0eUftorgHg", title: "TRT Müzik" },
-      { kind: "live", channel: "UCrFf5dtMe6M1XJHqbKJ4X6Q", title: "TRT Çocuk" },
-      { kind: "live", channel: "UCib1E6oJRLd2pXkxqzxyg7A", title: "TRT Avaz" },
-      { kind: "live", channel: "UC7fWeaHhqgM4Ry-RMpM2YYw", title: "TRT World" },
-      { kind: "live", channel: "UCFoe1tg8MuHjRzmqXtV816A", title: "Kanal D" },
-      { kind: "live", channel: "UC9JMe_We017gYrRc7kZHgmg", title: "Show TV" },
-      { kind: "live", channel: "UCUVZ7T_kwkxDOGFcDlFI-hg", title: "atv" },
-      { kind: "live", channel: "UCsFINj3y7SjBaeUxiSdRjlA", title: "Star TV" },
-      { kind: "live", channel: "UCJe13zu6MyE6Oueac41KAqg", title: "NOW" },
-      { kind: "live", channel: "UCp4N3g1zcvp8WE2qJ_JKqBg", title: "TV8" },
-      { kind: "live", channel: "UCephDYPmoVrQhEaZb0gS0Iw", title: "Beyaz TV" },
-      { kind: "live", channel: "UC0eqqV7viCLfcT39SphmHBQ", title: "Kanal 7" },
-      { kind: "live", channel: "UC9TDTjbOjFB9jADmPhSAPsw", title: "NTV" },
-      { kind: "live", channel: "UCV6zcRug6Hqp1UX_FdyUeBg", title: "CNN Türk" },
-      { kind: "live", channel: "UClGZC_r-sUcBdElAtDSrQ5g", title: "Habertürk" },
-      { kind: "live", channel: "UCzgrZ-CndOoylh2_e72nSBQ", title: "TGRT Haber" },
-      { kind: "live", channel: "UCKQhfw-lzz0uKnE1fY1PsAA", title: "A Haber" },
-      { kind: "live", channel: "UCJElRTCNEmLemgirqvsW63Q", title: "A Spor" },
-      { kind: "live", channel: "UCApLxl6oYQafxvykuoC2uxQ", title: "Bloomberg HT" },
-      { kind: "live", channel: "UCf_ResXZzE-o18zACUEmyvQ", title: "Halk TV" },
-      { kind: "live", channel: "UCOulx_rep5O4i9y6AyDqVvw", title: "Sözcü TV" },
-      { kind: "live", channel: "UCoHnRpOS5rL62jTmSDO5Npw", title: "Tele1" },
-      { kind: "live", channel: "UC6T0L26KS1NHMPbTwI1L4Eg", title: "Ulusal Kanal" },
-      { kind: "live", channel: "UC7nLr-rPOKYhRE4wRZoLxkg", title: "Euronews Türkçe" },
-      { kind: "live", channel: "UChNgvcVZ_ggDdZ0zCcuuzFw", title: "Bengütürk TV" },
-    ],
-  },
+  { key: "live", label: "Live TV", icon: "🔴", items: LIVE },
   {
     key: "videos", label: "Local videos", icon: "📼",
     items: [
@@ -56,7 +48,7 @@ const MENUS: Menu[] = [
       { kind: "video", id: "1w_k-xXU-NE", title: "Burdur Yeşilova — tanıtım" },
       { kind: "video", id: "e3NKWZAc2xg", title: "Salda Gölü — tanıtım filmi" },
       { kind: "video", id: "pvZZD4swQk4", title: "Salda Gölü — 4K drone" },
-      { kind: "video", id: "sksE0zD5SI4", title: "Türkiye'nin Maldivleri — Salda Gölü" },
+      { kind: "video", id: "sksE0zD5SI4", title: "Türkiye'nin Maldivleri — Salda" },
       { kind: "video", id: "926eAXu_Gng", title: "Salda Gölü — drone çekimi" },
       { kind: "video", id: "rcU7o2xnAv0", title: "Niyazlar köyü, Yeşilova" },
     ],
@@ -64,7 +56,7 @@ const MENUS: Menu[] = [
   {
     key: "music", label: "Local music", icon: "🎵",
     items: [
-      { kind: "video", id: "4SdVRekdnHI", title: "Erik Dalı Gevrektir — Kadir Türen (Dirmil, Yeşilova)" },
+      { kind: "video", id: "4SdVRekdnHI", title: "Erik Dalı Gevrektir — Kadir Türen (Dirmil)" },
       { kind: "video", id: "1QmigAWH4rQ", title: "Burdur türküleri — Ümran Özdemir" },
       { kind: "video", id: "y8m1k6WrIUU", title: "Burdur türküleri — Mehmet Koparan" },
       { kind: "video", id: "7oQlgihwelQ", title: "Şu Burdur'un Çalgısı — Uğur Önür" },
@@ -83,13 +75,8 @@ const MENUS: Menu[] = [
   },
 ];
 
-function ytSrc(item: Item, playing: boolean) {
-  const auto = playing ? 1 : 0;
-  if (item.kind === "live" && item.channel)
-    return `https://www.youtube.com/embed/live_stream?channel=${item.channel}&autoplay=${auto}&mute=1&rel=0&enablejsapi=1`;
-  if ((item.kind === "video" || item.kind === "live") && item.id)
-    return `https://www.youtube.com/embed/${item.id}?autoplay=${auto}&mute=1&rel=0&enablejsapi=1`;
-  return "";
+function ytSrc(id: string, playing: boolean) {
+  return `https://www.youtube.com/embed/${id}?autoplay=${playing ? 1 : 0}&mute=1&rel=0&enablejsapi=1`;
 }
 
 export default function LiveCam() {
@@ -98,124 +85,146 @@ export default function LiveCam() {
   const [menu, setMenu] = useState(0);
   const [idx, setIdx] = useState(0);
   const [playing, setPlaying] = useState(true);
+  const [muted, setMuted] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
+  const [dead, setDead] = useState(false); // all channels unreachable
   const frameRef = useRef<HTMLIFrameElement>(null);
+  const skips = useRef(0);
 
   const items = MENUS[menu].items;
   const item = items[idx];
+  const isYouTube = item?.kind === "video";
 
-  useEffect(() => { setIdx(0); }, [menu]);
+  useEffect(() => { setIdx(0); setDead(false); skips.current = 0; }, [menu]);
+
+  const go = useCallback((delta: number) => {
+    setDead(false); skips.current = 0;
+    setIdx((i) => (i + delta + items.length) % items.length);
+    setPlaying(true);
+  }, [items.length]);
+
+  // auto-skip a dead HLS channel; give up once we've cycled the whole list
+  const onStreamError = useCallback(() => {
+    skips.current += 1;
+    if (skips.current >= items.length) { setDead(true); return; }
+    setIdx((i) => (i + 1) % items.length);
+  }, [items.length]);
 
   function cmd(fn: "playVideo" | "pauseVideo") {
     frameRef.current?.contentWindow?.postMessage(
       JSON.stringify({ event: "command", func: fn, args: [] }), "*");
   }
   function togglePlay() {
-    if (item?.kind === "note" || item?.kind === "pending") return;
-    if (playing) { cmd("pauseVideo"); setPlaying(false); }
-    else { cmd("playVideo"); setPlaying(true); }
+    if (item?.kind === "pending") return;
+    if (isYouTube) { playing ? cmd("pauseVideo") : cmd("playVideo"); }
+    setPlaying((p) => !p);
   }
-  const next = () => { setIdx((i) => (i + 1) % items.length); setPlaying(true); };
-  const back = () => { setIdx((i) => (i - 1 + items.length) % items.length); setPlaying(true); };
 
   return (
     <>
-      <button onClick={() => setOpen(true)}
-        className="bg-olive-deep text-cream rounded-2xl p-4 flex flex-col justify-between hover:bg-olive transition-colors col-span-2 md:col-span-1 text-left cursor-pointer w-full">
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm">📺</span>
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-sage">Salda TV</h3>
-          <span className="ml-auto flex items-center" title="Feeds embedded">
-            <span className="led led-live" aria-hidden />
-          </span>
+      {/* Retro TV tile — no descriptive text, just the set + a power button */}
+      <button onClick={() => setOpen(true)} aria-label="Turn the Salda TV on"
+        className="col-span-2 md:col-span-1 rounded-2xl p-3 flex flex-col items-center justify-center gap-2 cursor-pointer w-full transition-transform hover:-translate-y-0.5"
+        style={{ background: "linear-gradient(145deg,#5b4632,#3a2c1d)" }}>
+        <div className="relative w-full rounded-lg overflow-hidden border-4 border-[#2a2018]" style={{ paddingTop: "56%" }}>
+          <div className="absolute inset-0" style={{ backgroundImage: `url("${NOISE_URL}")`, backgroundSize: "120px 120px", opacity: .7 }} />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-3xl">📺</span>
+          </div>
         </div>
-        <div className="mt-2">
-          <p className="text-sm leading-snug">Live lake camera, local videos, music & film — on the village set.</p>
-          <p className="text-xs text-sage mt-2">Turn it on →</p>
-        </div>
+        <span className="mt-1 px-4 py-1.5 rounded-full bg-terra text-cream text-sm font-semibold shadow">
+          ⏻ Turn TV on
+        </span>
       </button>
 
       {open && (
-        <div onClick={() => setOpen(false)} className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-3 sm:p-6">
-          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-2xl">
-            {/* TV set */}
-            <div className="rounded-[2rem] p-4 sm:p-6" style={{ background: "linear-gradient(145deg,#5b4632,#3a2c1d)", boxShadow: "0 30px 60px rgba(0,0,0,.6), inset 0 2px 6px rgba(255,255,255,.15)" }}>
-              <div className="flex gap-4">
-                {/* Screen */}
-                <div className="flex-1">
-                  <div className="relative rounded-xl overflow-hidden bg-black border-4 border-[#2a2018]" style={{ paddingTop: "62%" }}>
-                    {!power ? (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black">
-                        <div className="w-full h-full" style={{ background: "repeating-linear-gradient(0deg,#111,#111 2px,#1a1a1a 2px,#1a1a1a 4px)" }} />
-                        <span className="absolute w-2 h-2 rounded-full bg-white/40" />
-                      </div>
-                    ) : item?.kind === "note" ? (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6" style={{ background: "radial-gradient(circle,#1e2a1a,#0c0f0a)" }}>
-                        <span className="text-3xl mb-2">{MENUS[menu].icon}</span>
-                        <p className="text-cream font-semibold">{item.title}</p>
-                        <p className="text-sage text-xs mt-2 max-w-xs">{item.note}</p>
-                      </div>
-                    ) : item?.kind === "pending" ? (
-                      <div className="absolute inset-0 bg-black">
-                        <div className="absolute inset-0" style={{ backgroundImage: `url("${NOISE_URL}")`, backgroundSize: "140px 140px", opacity: 0.85, filter: "contrast(1.5)" }} />
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
-                          <span className="bg-black/75 text-cream text-xs sm:text-sm px-3 py-1.5 rounded tracking-wide">📡 Setup: connect to stream</span>
-                          <span className="text-cream/50 text-[10px]">{item.title}</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <iframe ref={frameRef} key={`${menu}-${idx}-${playing}`} className="absolute inset-0 w-full h-full"
-                        src={ytSrc(item, playing)} title={item.title}
-                        allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
-                    )}
-                    {/* scanline overlay */}
-                    {power && <div className="pointer-events-none absolute inset-0" style={{ background: "repeating-linear-gradient(0deg,rgba(0,0,0,.06),rgba(0,0,0,.06) 1px,transparent 1px,transparent 3px)" }} />}
-                    {/* channel badge */}
-                    {power && (
-                      <div className="absolute top-2 left-2 bg-black/60 text-cream text-[11px] px-2 py-0.5 rounded">
-                        {MENUS[menu].icon} {MENUS[menu].label} · {idx + 1}/{items.length}
-                      </div>
-                    )}
-                    {/* menu overlay */}
-                    {power && showMenu && (
-                      <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-2">
-                        {MENUS.map((m, i) => (
-                          <button key={m.key} onClick={() => { setMenu(i); setShowMenu(false); setPlaying(true); }}
-                            className={`px-5 py-1.5 rounded-full text-sm ${i === menu ? "bg-terra text-cream" : "bg-white/10 text-cream hover:bg-white/20"}`}>
-                            {m.icon} {m.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+        <div onClick={() => setOpen(false)} className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-2 sm:p-6">
+          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-3xl">
+            {/* TV set — wooden body, big screen, controls beneath */}
+            <div className="rounded-[1.75rem] p-3 sm:p-5" style={{ background: "linear-gradient(145deg,#5b4632,#3a2c1d)", boxShadow: "0 30px 60px rgba(0,0,0,.6), inset 0 2px 6px rgba(255,255,255,.15)" }}>
+              {/* Screen (large, 16:9) */}
+              <div className="relative rounded-xl overflow-hidden bg-black border-4 sm:border-8 border-[#241b13]" style={{ paddingTop: "56.25%", boxShadow: "inset 0 0 40px rgba(0,0,0,.8)" }}>
+                {!power ? (
+                  <div className="absolute inset-0 bg-black flex items-center justify-center">
+                    <span className="w-2 h-2 rounded-full bg-white/40" />
                   </div>
-                </div>
+                ) : dead ? (
+                  <div className="absolute inset-0 bg-black">
+                    <div className="absolute inset-0" style={{ backgroundImage: `url("${NOISE_URL}")`, backgroundSize: "160px 160px", opacity: .85, filter: "contrast(1.5)" }} />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
+                      <span className="bg-black/75 text-cream text-sm px-3 py-1.5 rounded tracking-wide">📡 No signal reachable</span>
+                      <span className="text-cream/50 text-[11px]">Try another channel or category</span>
+                    </div>
+                  </div>
+                ) : item?.kind === "pending" ? (
+                  <div className="absolute inset-0 bg-black">
+                    <div className="absolute inset-0" style={{ backgroundImage: `url("${NOISE_URL}")`, backgroundSize: "160px 160px", opacity: .85, filter: "contrast(1.5)" }} />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
+                      <span className="bg-black/75 text-cream text-sm px-3 py-1.5 rounded tracking-wide">📡 Setup: connect to stream</span>
+                      <span className="text-cream/50 text-[11px]">{item.title}</span>
+                    </div>
+                  </div>
+                ) : item?.kind === "hls" ? (
+                  <HlsPlayer key={item.src} src={item.src} muted={muted} onError={onStreamError} />
+                ) : (
+                  <iframe ref={frameRef} key={`${menu}-${idx}-${playing}`} className="absolute inset-0 w-full h-full"
+                    src={ytSrc(item.id, playing)} title={item.title}
+                    allow="autoplay; encrypted-media; fullscreen" allowFullScreen />
+                )}
+                {/* scanlines */}
+                {power && <div className="pointer-events-none absolute inset-0" style={{ background: "repeating-linear-gradient(0deg,rgba(0,0,0,.06),rgba(0,0,0,.06) 1px,transparent 1px,transparent 3px)" }} />}
+                {/* channel badge */}
+                {power && !dead && item && (
+                  <div className="absolute top-2 left-2 bg-black/60 text-cream text-[11px] px-2 py-0.5 rounded">
+                    {MENUS[menu].icon} {item.title} · {idx + 1}/{items.length}
+                  </div>
+                )}
+                {/* menu overlay */}
+                {power && showMenu && (
+                  <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center gap-2">
+                    {MENUS.map((m, i) => (
+                      <button key={m.key} onClick={() => { setMenu(i); setShowMenu(false); setPlaying(true); }}
+                        className={`px-6 py-2 rounded-full text-sm ${i === menu ? "bg-terra text-cream" : "bg-white/10 text-cream hover:bg-white/20"}`}>
+                        {m.icon} {m.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-                {/* Control panel */}
-                <div className="w-16 sm:w-20 shrink-0 flex flex-col items-center gap-2 py-1">
-                  <span className="display text-cream text-xs mb-1">SALDA</span>
-                  <button onClick={() => setPower((p) => !p)} title="Power"
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${power ? "bg-terra text-cream" : "bg-black/40 text-cream/50"}`}>⏻</button>
-                  <button onClick={() => setShowMenu((s) => !s)} disabled={!power} title="Menu"
-                    className="w-10 h-10 rounded-full bg-[#2a2018] text-cream flex items-center justify-center disabled:opacity-40">☰</button>
-                  <button onClick={back} disabled={!power} title="Back"
-                    className="w-10 h-10 rounded-full bg-[#2a2018] text-cream flex items-center justify-center disabled:opacity-40">⏮</button>
-                  <button onClick={togglePlay} disabled={!power || item?.kind === "note" || item?.kind === "pending"} title="Play/Pause"
-                    className="w-10 h-10 rounded-full bg-[#2a2018] text-cream flex items-center justify-center disabled:opacity-40">{playing ? "⏸" : "▶"}</button>
-                  <button onClick={next} disabled={!power} title="Next"
-                    className="w-10 h-10 rounded-full bg-[#2a2018] text-cream flex items-center justify-center disabled:opacity-40">⏭</button>
-                  <div className="mt-1 flex flex-col items-center gap-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: power ? "#7ee08a" : "#444" }} />
-                    <span className="text-cream/40 text-[8px]">PWR</span>
-                  </div>
+              {/* Control bar — BENEATH the screen */}
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <span className="display text-cream text-sm tracking-wide pl-1 hidden sm:block">SALDA</span>
+                <div className="flex items-center gap-1.5 sm:gap-2 mx-auto sm:mx-0">
+                  <TVBtn onClick={() => setPower((p) => !p)} title="Power" active={power}>⏻</TVBtn>
+                  <TVBtn onClick={() => setShowMenu((s) => !s)} disabled={!power} title="Menu">☰</TVBtn>
+                  <TVBtn onClick={() => go(-1)} disabled={!power} title="Previous channel">⏮</TVBtn>
+                  <TVBtn onClick={togglePlay} disabled={!power || item?.kind === "pending"} title="Play / pause">{playing ? "⏸" : "▶"}</TVBtn>
+                  <TVBtn onClick={() => go(1)} disabled={!power} title="Next channel">⏭</TVBtn>
+                  <TVBtn onClick={() => setMuted((m) => !m)} disabled={!power || isYouTube} title={muted ? "Unmute" : "Mute"}>{muted ? "🔇" : "🔊"}</TVBtn>
                 </div>
+                <button onClick={() => setOpen(false)} className="text-cream/70 text-xs underline pr-1 hidden sm:block">Close</button>
               </div>
             </div>
-            <div className="text-center mt-3">
+            <div className="text-center mt-3 sm:hidden">
               <button onClick={() => setOpen(false)} className="text-cream/70 text-sm underline">Close</button>
             </div>
           </div>
         </div>
       )}
     </>
+  );
+}
+
+function TVBtn({ children, onClick, disabled, title, active }: {
+  children: React.ReactNode; onClick: () => void; disabled?: boolean; title: string; active?: boolean;
+}) {
+  return (
+    <button onClick={onClick} disabled={disabled} title={title}
+      className={`w-10 h-10 rounded-full flex items-center justify-center text-lg transition-colors disabled:opacity-40 ${
+        active ? "bg-terra text-cream" : "bg-[#2a2018] text-cream hover:bg-[#3a2c1d]"
+      }`}>
+      {children}
+    </button>
   );
 }
