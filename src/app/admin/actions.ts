@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getAdminState } from "@/lib/admin";
+import { logAgent } from "@/lib/agentLog";
 
 const TABLES = ["posts", "photos", "listings", "opportunities", "messages"] as const;
 type Table = (typeof TABLES)[number];
@@ -13,6 +14,7 @@ export async function removeContent(formData: FormData) {
   const id = String(formData.get("id") || "");
   if (!TABLES.includes(table) || !id) return;
   await supabase.from(table).delete().eq("id", id);
+  await logAgent(supabase, { actor: "admin", decision: "removed", target_table: table, target_id: id, summary: `Removed ${table} item` });
   revalidatePath("/admin");
 }
 
@@ -23,6 +25,7 @@ export async function clearFlag(formData: FormData) {
   const id = String(formData.get("id") || "");
   if (!["posts", "photos", "listings"].includes(table) || !id) return;
   await supabase.from(table).update({ flagged: false, flag_reason: null }).eq("id", id);
+  await logAgent(supabase, { actor: "admin", decision: "approved", target_table: table, target_id: id, summary: `Approved ${table} item` });
   revalidatePath("/admin");
 }
 

@@ -6,6 +6,7 @@ import { CATEGORIES } from "@/lib/categories";
 import { removeContent, clearFlag, editPost, editPhoto, markEmailRead, deleteEmail } from "./actions";
 import OpsRobot from "@/components/OpsRobot";
 import RobotButton from "@/components/RobotButton";
+import { timeAgo } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -73,7 +74,32 @@ export default async function AdminPage() {
     .order("received_at", { ascending: false }).limit(30);
   const unread = (emails ?? []).filter((e) => !e.is_read).length;
 
+  // --- agent activity ---
+  const { data: log } = await supabase.from("agent_log")
+    .select("id,actor,decision,target_table,summary,reason,created_at")
+    .order("created_at", { ascending: false }).limit(40);
+  const decisionCount = async (d: string) => {
+    const { count } = await supabase.from("agent_log").select("*", { count: "exact", head: true }).eq("decision", d);
+    return count ?? 0;
+  };
+  const [nPublished, nFlagged, nApproved, nRemoved] = await Promise.all([
+    decisionCount("published"), decisionCount("flagged"), decisionCount("approved"), decisionCount("removed"),
+  ]);
+
   const approxPois = POIS.filter((x) => !x.verified);
+
+  // agent's live to-do checklist
+  const todo = [
+    { label: "Flagged items awaiting review", n: flagged.length, done: flagged.length === 0 },
+    { label: "Unread support emails", n: unread, done: unread === 0 },
+    { label: "Map pins needing exact coordinates", n: approxPois.length, done: approxPois.length === 0 },
+  ];
+  const decMeta: Record<string, { label: string; cls: string; icon: string }> = {
+    published: { label: "Published", cls: "bg-sage/30 text-olive-deep", icon: "✓" },
+    flagged: { label: "Flagged", cls: "bg-amber-100 text-amber-800", icon: "⚑" },
+    approved: { label: "Approved", cls: "bg-sage/30 text-olive-deep", icon: "👍" },
+    removed: { label: "Removed", cls: "bg-terra/15 text-terra-deep", icon: "🗑" },
+  };
 
   return (
     <Shell>
@@ -81,6 +107,65 @@ export default async function AdminPage() {
         <h1 className="display text-3xl font-semibold text-olive-deep">Operations</h1>
         <p className="text-sm text-faded">Signed in as {user.email}</p>
       </div>
+
+      {/* THE AGENT — its job, checklist, stats, and live log */}
+      <section className="bg-olive-deep text-cream rounded-2xl p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-2xl">🤖</span>
+          <div>
+            <h2 className="display text-xl font-semibold">The Güney agent</h2>
+            <p className="text-xs text-sage">Screens every post, listing, photo and email as it arrives — publishes clean content, flags anything suspicious for you, and keeps this log.</p>
+          </div>
+        </div>
+
+        {/* decision stats */}
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          {[["Published", nPublished], ["Flagged", nFlagged], ["Approved", nApproved], ["Removed", nRemoved]].map(([l, n]) => (
+            <div key={l as string} className="bg-black/20 rounded-xl px-3 py-2 text-center">
+              <p className="display text-2xl font-semibold">{n as number}</p>
+              <p className="text-[10px] uppercase tracking-wide text-sage">{l as string}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* checklist */}
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-sage mb-1.5">On its list right now</p>
+            <div className="space-y-1">
+              {todo.map((t) => (
+                <div key={t.label} className="flex items-center gap-2 bg-black/15 rounded-lg px-3 py-1.5 text-sm">
+                  <span className={t.done ? "text-green-400" : "text-amber-300"}>{t.done ? "✓" : "•"}</span>
+                  <span className="flex-1">{t.label}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${t.done ? "bg-green-500/20 text-green-200" : "bg-amber-400/20 text-amber-200"}`}>{t.n}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* live log */}
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-sage mb-1.5">Live activity log</p>
+            <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+              {(log ?? []).length === 0 ? (
+                <p className="text-sm text-sage bg-black/15 rounded-lg px-3 py-2">No activity yet. Every decision it makes will stream here.</p>
+              ) : (log ?? []).map((e) => {
+                const m = decMeta[e.decision] ?? { label: e.decision, cls: "bg-white/10", icon: "•" };
+                return (
+                  <div key={e.id} className="flex items-start gap-2 bg-black/15 rounded-lg px-3 py-1.5 text-sm">
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full shrink-0 ${m.cls}`}>{m.icon} {m.label}</span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block truncate">{e.summary}</span>
+                      {e.reason && <span className="block text-[11px] text-sage truncate">⚑ {e.reason}</span>}
+                    </span>
+                    <span className="text-[10px] text-sage shrink-0">{timeAgo(e.created_at)}{e.actor === "admin" ? " · you" : ""}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Live status */}
       <Section title="Live feeds — what's alive / dead">

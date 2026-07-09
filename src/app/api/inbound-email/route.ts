@@ -38,5 +38,10 @@ export async function POST(req: Request) {
   });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  await supabase.from("agent_log").insert({
+    actor: "ai", decision: scr.flagged ? "flagged" : "published",
+    target_table: "support_emails", summary: `Email: ${subject || "(no subject)"}`, reason: scr.reason,
+  });
+
   return NextResponse.json({ ok: true });
 }

@@ -11,20 +11,29 @@ const SPAM = [
   "loan", "investment opportunity", "make money", "click here", "free money",
   "whatsapp me", "telegram", "onlyfans", "escort", "betting", "bet now",
 ];
-const LINK = /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|net|org|io|ru|xyz|top|live|info)\b)/i;
+// Email addresses are normal in support/community content — never flag them.
+const EMAIL = /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/gi;
+// Only real outbound URLs and known link-spam TLDs count as "external link" —
+// NOT a bare mention of guney.live or a plain email address.
+const URL = /(https?:\/\/|www\.)\S+/i;
+const SUSPICIOUS_TLD = /\b[a-z0-9-]+\.(ru|xyz|top|tk|cn|click|loan|shop|monster)\b/i;
+const OWN_DOMAIN = /guney\.live/gi;
 const MANY_CAPS = /\b[A-Z]{6,}\b/;
 const REPEAT = /(.)\1{6,}/; // same char 7+ times
 
 export type Screen = { flagged: boolean; reason: string | null };
 
 export function screenText(...parts: (string | null | undefined)[]): Screen {
-  const text = parts.filter(Boolean).join(" ").toLowerCase();
   const raw = parts.filter(Boolean).join(" ");
+  const text = raw.toLowerCase();
+  // strip emails and our own domain so they never count as links
+  const scrubbed = raw.replace(EMAIL, " ").replace(OWN_DOMAIN, " ");
   const hits: string[] = [];
 
   const spam = SPAM.find((w) => text.includes(w));
   if (spam) hits.push(`spam term ("${spam}")`);
-  if (LINK.test(raw)) hits.push("external link");
+  if (URL.test(scrubbed)) hits.push("external link");
+  else if (SUSPICIOUS_TLD.test(scrubbed)) hits.push("suspicious domain");
   if (MANY_CAPS.test(raw)) hits.push("shouting / all-caps");
   if (REPEAT.test(raw)) hits.push("repeated characters");
   if (raw.trim().length < 3) hits.push("too short");

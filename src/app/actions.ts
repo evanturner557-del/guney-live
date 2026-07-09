@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { screenText } from "@/lib/moderation";
+import { logAgent } from "@/lib/agentLog";
 
 export async function signOut() {
   const supabase = await createClient();
@@ -27,6 +28,10 @@ export async function createPost(formData: FormData) {
     event_date: type === "event" && eventDate ? new Date(eventDate).toISOString() : null,
     event_location: type === "event" && eventLocation ? eventLocation : null,
     flagged: scr.flagged, flag_reason: scr.reason,
+  });
+  await logAgent(supabase, {
+    decision: scr.flagged ? "flagged" : "published", target_table: "posts",
+    summary: `Post: ${title}`, reason: scr.reason,
   });
   revalidatePath("/community"); revalidatePath("/");
 }
@@ -87,6 +92,10 @@ export async function createListing(formData: FormData) {
     seller_id: user.id, seller_name: prof?.name ?? null, kind, title,
     description: description || null, price: priceRaw ? Number(priceRaw) : null,
     contact: contact || null, flagged: scr.flagged, flag_reason: scr.reason,
+  });
+  await logAgent(supabase, {
+    decision: scr.flagged ? "flagged" : "published", target_table: "listings",
+    summary: `Listing: ${title}`, reason: scr.reason,
   });
   revalidatePath("/community/marketplace");
 }
