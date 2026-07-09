@@ -25,3 +25,25 @@ export async function clearFlag(formData: FormData) {
   await supabase.from(table).update({ flagged: false, flag_reason: null }).eq("id", id);
   revalidatePath("/admin");
 }
+
+export async function editPost(formData: FormData) {
+  const { isAdmin, supabase } = await getAdminState();
+  if (!isAdmin) return;
+  const id = String(formData.get("id") || "");
+  const title = String(formData.get("title") || "").trim();
+  const body = String(formData.get("body") || "").trim();
+  if (!id || !title) return;
+  await supabase.from("posts").update({ title, body }).eq("id", id);
+  revalidatePath("/admin"); revalidatePath("/community"); revalidatePath("/");
+}
+
+export async function editPhoto(formData: FormData) {
+  const { isAdmin, supabase } = await getAdminState();
+  if (!isAdmin) return;
+  const id = String(formData.get("id") || "");
+  const caption = String(formData.get("caption") || "").trim();
+  const category = String(formData.get("category") || "").trim();
+  if (!id) return;
+  await supabase.from("photos").update({ caption: caption || null, category }).eq("id", id);
+  revalidatePath("/admin"); revalidatePath("/gallery");
+}

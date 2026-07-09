@@ -2,7 +2,10 @@ import Link from "next/link";
 import { getAdminState } from "@/lib/admin";
 import { getWeather, getAir, getPrayer, getRates, getQuakes } from "@/lib/village";
 import { POIS } from "@/lib/pois";
-import { removeContent, clearFlag } from "./actions";
+import { CATEGORIES } from "@/lib/categories";
+import { removeContent, clearFlag, editPost, editPhoto } from "./actions";
+import OpsRobot from "@/components/OpsRobot";
+import RobotButton from "@/components/RobotButton";
 
 export const dynamic = "force-dynamic";
 
@@ -14,25 +17,6 @@ async function timed<T>(fn: () => Promise<T>): Promise<{ ok: boolean; ms: number
 
 function Dot({ ok }: { ok: boolean }) {
   return <span className={`led ${ok ? "led-live" : "led-dead"}`} aria-hidden />;
-}
-
-function RemoveBtn({ table, id }: { table: string; id: string }) {
-  return (
-    <form action={removeContent}>
-      <input type="hidden" name="table" value={table} />
-      <input type="hidden" name="id" value={id} />
-      <button className="text-[11px] px-2 py-1 rounded-full bg-terra/10 text-terra-deep hover:bg-terra hover:text-cream transition-colors cursor-pointer">Remove</button>
-    </form>
-  );
-}
-function ApproveBtn({ table, id }: { table: string; id: string }) {
-  return (
-    <form action={clearFlag}>
-      <input type="hidden" name="table" value={table} />
-      <input type="hidden" name="id" value={id} />
-      <button className="text-[11px] px-2 py-1 rounded-full bg-sage/30 text-olive-deep hover:bg-olive hover:text-cream transition-colors cursor-pointer">Approve</button>
-    </form>
-  );
 }
 
 export default async function AdminPage() {
@@ -79,8 +63,8 @@ export default async function AdminPage() {
     ...(fl.data ?? []).map((x) => ({ table: "listings", id: x.id, title: x.title, sub: x.description?.slice(0, 80), who: x.seller_name, reason: x.flag_reason })),
   ];
 
-  // --- recent content (for manual moderation) ---
-  const { data: recentPosts } = await supabase.from("posts").select("id,type,title,author_name,created_at").order("created_at", { ascending: false }).limit(8);
+  // --- recent content (for manual moderation + edit) ---
+  const { data: recentPosts } = await supabase.from("posts").select("id,type,title,body,author_name,created_at").order("created_at", { ascending: false }).limit(8);
   const { data: recentPhotos } = await supabase.from("photos").select("id,caption,url,category,is_external").order("created_at", { ascending: false }).limit(8);
 
   const approxPois = POIS.filter((x) => !x.verified);
@@ -126,19 +110,19 @@ export default async function AdminPage() {
       {/* Review queue */}
       <Section title={`Review queue — flagged by the auto-publish screen (${flagged.length})`}>
         {flagged.length === 0 ? (
-          <p className="text-sm text-faded bg-white border border-sand rounded-xl px-3 py-4">Nothing flagged. Clean content publishes automatically; anything suspicious lands here.</p>
+          <p className="text-sm text-faded bg-white border border-sand rounded-xl px-3 py-4">Nothing flagged. Clean content publishes automatically; anything suspicious lands here — tap 🤖 on an item and the robot scrubs it.</p>
         ) : (
           <div className="space-y-2">
             {flagged.map((x) => (
-              <div key={`${x.table}-${x.id}`} className="bg-white border border-terra/40 rounded-xl px-3 py-2.5 flex items-start gap-3">
+              <div key={`${x.table}-${x.id}`} data-robot-row className="bg-white border border-terra/40 rounded-xl px-3 py-2.5 flex items-start gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate">{x.title}</p>
                   <p className="text-[12px] text-faded truncate">{x.sub}</p>
                   <p className="text-[11px] text-terra-deep mt-0.5">⚑ {x.reason}{x.who ? ` · by ${x.who}` : ""} · {x.table}</p>
                 </div>
                 <div className="flex flex-col gap-1 shrink-0">
-                  <ApproveBtn table={x.table} id={x.id} />
-                  <RemoveBtn table={x.table} id={x.id} />
+                  <RobotButton action={clearFlag} table={x.table} id={x.id} label="Approve" tone="approve" />
+                  <RobotButton action={removeContent} table={x.table} id={x.id} label="Remove" tone="remove" />
                 </div>
               </div>
             ))}
@@ -146,32 +130,53 @@ export default async function AdminPage() {
         )}
       </Section>
 
-      {/* Recent posts */}
-      <Section title="Recent posts">
+      {/* Recent posts — review + edit */}
+      <Section title="Recent posts — review & edit">
         <div className="space-y-1.5">
           {(recentPosts ?? []).map((x) => (
-            <div key={x.id} className="bg-white border border-sand rounded-xl px-3 py-2 flex items-center gap-3 text-sm">
-              <span className="text-[10px] uppercase text-faded w-14 shrink-0">{x.type}</span>
-              <span className="flex-1 truncate">{x.title}</span>
-              <span className="text-[11px] text-faded hidden sm:block">{x.author_name}</span>
-              <RemoveBtn table="posts" id={x.id} />
-            </div>
+            <details key={x.id} data-robot-row className="bg-white border border-sand rounded-xl group">
+              <summary className="px-3 py-2 flex items-center gap-3 text-sm cursor-pointer list-none">
+                <span className="text-[10px] uppercase text-faded w-14 shrink-0">{x.type}</span>
+                <span className="flex-1 truncate">{x.title}</span>
+                <span className="text-[11px] text-faded hidden sm:block">{x.author_name}</span>
+                <span className="text-[11px] text-terra group-open:hidden">Edit ↓</span>
+              </summary>
+              <div className="px-3 pb-3 border-t border-sand pt-3 space-y-2">
+                <form action={editPost} className="space-y-2">
+                  <input type="hidden" name="id" value={x.id} />
+                  <input name="title" defaultValue={x.title} className="w-full border border-sand rounded-lg px-3 py-2 text-sm" />
+                  <textarea name="body" defaultValue={x.body ?? ""} rows={3} className="w-full border border-sand rounded-lg px-3 py-2 text-sm" />
+                  <div className="flex items-center gap-2">
+                    <button className="text-[11px] px-3 py-1 rounded-full bg-olive text-cream cursor-pointer">Save changes</button>
+                    <RobotButton action={removeContent} table="posts" id={x.id} label="Remove" tone="remove" />
+                  </div>
+                </form>
+              </div>
+            </details>
           ))}
           {(recentPosts ?? []).length === 0 && <p className="text-sm text-faded">No posts yet.</p>}
         </div>
       </Section>
 
-      {/* Recent photos */}
-      <Section title="Recent photos">
+      {/* Recent photos — review + edit */}
+      <Section title="Recent photos — review & edit">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {(recentPhotos ?? []).map((x) => (
-            <div key={x.id} className="bg-white border border-sand rounded-xl overflow-hidden">
+            <div key={x.id} data-robot-row className="bg-white border border-sand rounded-xl overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={x.url} alt={x.caption ?? ""} className="w-full h-24 object-cover" />
-              <div className="p-2">
-                <p className="text-[11px] text-faded truncate">{x.category} · {x.is_external ? "external" : "member"}</p>
-                <div className="mt-1"><RemoveBtn table="photos" id={x.id} /></div>
-              </div>
+              <form action={editPhoto} className="p-2 space-y-1.5">
+                <input type="hidden" name="id" value={x.id} />
+                <input name="caption" defaultValue={x.caption ?? ""} placeholder="Caption" className="w-full border border-sand rounded px-2 py-1 text-[12px]" />
+                <select name="category" defaultValue={x.category} className="w-full border border-sand rounded px-2 py-1 text-[12px] bg-cream">
+                  {CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.name}</option>)}
+                </select>
+                <div className="flex items-center gap-1.5">
+                  <button className="text-[11px] px-2 py-1 rounded-full bg-olive text-cream cursor-pointer">Save</button>
+                  <RobotButton action={removeContent} table="photos" id={x.id} label="Remove" tone="remove" />
+                </div>
+                <p className="text-[10px] text-faded">{x.is_external ? "external" : "member"}</p>
+              </form>
             </div>
           ))}
         </div>
@@ -190,6 +195,8 @@ export default async function AdminPage() {
           ))}
         </div>
       </Section>
+
+      <OpsRobot flaggedCount={flagged.length} />
     </Shell>
   );
 }

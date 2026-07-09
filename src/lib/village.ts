@@ -69,6 +69,34 @@ export async function getAir(): Promise<Air> {
   } catch { return null; }
 }
 
+// AQI for a few comparison cities (same EU index), for the air-quality info box.
+export type AirCompare = { city: string; aqi: number; label: string; color: string }[];
+function aqiBand(aqi: number): [string, string] {
+  return aqi <= 20 ? ["Very good", "#5c6b3f"] : aqi <= 40 ? ["Good", "#7a8a4e"] :
+    aqi <= 60 ? ["Moderate", "#c99a2e"] : aqi <= 80 ? ["Poor", "#b85c38"] :
+    aqi <= 100 ? ["Very poor", "#9a4527"] : ["Extremely poor", "#7a2d1a"];
+}
+export async function getAirCompare(): Promise<AirCompare> {
+  const cities = [
+    { city: "Burdur", lat: 37.72, lon: 30.29 },
+    { city: "Denizli", lat: 37.78, lon: 29.09 },
+    { city: "İstanbul", lat: 41.01, lon: 28.98 },
+    { city: "Ankara", lat: 39.93, lon: 32.86 },
+  ];
+  try {
+    const out = await Promise.all(cities.map(async (c) => {
+      const u = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${c.lat}&longitude=${c.lon}&current=european_aqi&timezone=Europe%2FIstanbul`;
+      const r = await fetch(u, { next: { revalidate: 3600 } });
+      if (!r.ok) return null;
+      const d = await r.json();
+      const aqi = Math.round(d.current.european_aqi);
+      const [label, color] = aqiBand(aqi);
+      return { city: c.city, aqi, label, color };
+    }));
+    return out.filter(Boolean) as AirCompare;
+  } catch { return []; }
+}
+
 export type Prayer = { timings: { name: string; time: string }[]; hijri: string; next: string } | null;
 export async function getPrayer(): Promise<Prayer> {
   try {

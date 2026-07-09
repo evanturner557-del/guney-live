@@ -3,7 +3,7 @@
 // (night/dawn/day/dusk) is computed from the current Istanbul time vs the
 // day's sunrise/sunset; the "sky" (clear/cloud/rain/snow/storm) from the WMO code.
 
-type Phase = "night" | "dawn" | "day" | "dusk";
+export type Phase = "night" | "dawn" | "day" | "dusk";
 type Sky = "clear" | "cloud" | "rain" | "snow" | "storm";
 
 function skyFromCode(code: number): Sky {
@@ -29,6 +29,12 @@ const OVERCAST: Record<Phase, string> = {
   day: "linear-gradient(180deg,#7d8794 0%,#a7b0ba 100%)",
   dusk: "linear-gradient(180deg,#33323f 0%,#6b5a5a 100%)",
 };
+
+// Flat time-of-day sky gradient, shared by all dashboard cards so the whole
+// "village right now" row takes on the current sky palette.
+export function skyGradient(phase: Phase): string {
+  return PHASE_BG[phase];
+}
 
 export function timePhase(sunriseISO: string, sunsetISO: string, nowMin: number): Phase {
   const toMin = (iso: string) => {

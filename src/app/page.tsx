@@ -6,7 +6,7 @@ import HeroSlideshow from "@/components/HeroSlideshow";
 import CategoryCovers, { type CatStat } from "@/components/CategoryCovers";
 import VillageMap from "@/components/VillageMap";
 import { CATEGORIES } from "@/lib/categories";
-import { getWeather, getAir, getPrayer, getRates, getQuakes } from "@/lib/village";
+import { getWeather, getAir, getAirCompare, getPrayer, getRates, getQuakes } from "@/lib/village";
 
 export const revalidate = 1800;
 
@@ -66,9 +66,9 @@ function ColLabel({ children }: { children: React.ReactNode }) {
 
 export default async function Home() {
   const supabase = await createClient();
-  const [weather, air, prayer, rates, quakes, postsRes, eventsRes, oppsRes, featRes, catRes] =
+  const [weather, air, airCompare, prayer, rates, quakes, postsRes, eventsRes, oppsRes, featRes, catRes] =
     await Promise.all([
-      getWeather(), getAir(), getPrayer(), getRates(), getQuakes(),
+      getWeather(), getAir(), getAirCompare(), getPrayer(), getRates(), getQuakes(),
       supabase.from("posts").select("*, profiles(name)").order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(6),
       supabase.from("posts").select("*, profiles(name)").eq("type", "event").gte("event_date", new Date().toISOString()).order("event_date").limit(4),
       supabase.from("opportunities").select("*").eq("status", "open").order("created_at", { ascending: false }).limit(4),
@@ -124,7 +124,7 @@ export default async function Home() {
       </section>
 
       <div className="mx-auto max-w-5xl px-4">
-        <Dashboard weather={weather} air={air} prayer={prayer} rates={rates} quakes={quakes} />
+        <Dashboard weather={weather} air={air} airCompare={airCompare} prayer={prayer} rates={rates} quakes={quakes} />
 
         {/* Map + category gallery */}
         <section className="grid md:grid-cols-2 gap-6 mt-10">

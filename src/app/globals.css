@@ -113,3 +113,14 @@ h1, h2, h3, .display {
 @media (prefers-reduced-motion: reduce) {
   .ws-star, .ws-sun, .ws-cloud-a, .ws-cloud-b, .ws-cloud-c, .ws-rain, .ws-snow, .ws-flash { animation: none; }
 }
+
+/* ---- Ops robot ---- */
+.robot-bob { animation: robot-bob 2.4s ease-in-out infinite; }
+@keyframes robot-bob { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-6px) rotate(2deg); } }
+.robot-shake { animation: robot-shake .18s linear infinite; }
+@keyframes robot-shake { 0%,100% { transform: rotate(-12deg) scale(1.05); } 50% { transform: rotate(12deg) scale(.95); } }
+.robot-scrub { animation: robot-scrub .35s ease-in-out infinite alternate; }
+@keyframes robot-scrub { from { left: 0; transform: rotate(-15deg); } to { left: calc(100% - 4rem); transform: rotate(15deg); } }
+.robot-wipe { animation: robot-wipe .95s ease-in forwards; }
+@keyframes robot-wipe { 0% { clip-path: inset(0 100% 0 0); } 60% { clip-path: inset(0 0 0 0); } 100% { clip-path: inset(0 0 0 100%); } }
+@media (prefers-reduced-motion: reduce) { .robot-bob, .robot-shake, .robot-scrub, .robot-wipe { animation: none; } }
