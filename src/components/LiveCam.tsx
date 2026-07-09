@@ -9,34 +9,76 @@ type Item = { kind: "live" | "pending" | "video" | "note"; id?: string; channel?
 type Menu = { key: string; label: string; icon: string; items: Item[] };
 
 // NOTE: the Salda lake cam has no free public embeddable source yet — shown as
-// "no signal" until a real stream is wired up. The Live TV channels below are
-// placeholders pending verified official YouTube channel IDs.
+// "no signal" until a real stream is wired up. Everything else below is a
+// verified, currently-live-maintained official YouTube channel/video — no
+// scraped or unofficially rehosted content.
 const MENUS: Menu[] = [
   {
     key: "live", label: "Live TV", icon: "🔴",
     items: [
       { kind: "pending", title: "Salda Gölü — lake cam" },
-      { kind: "pending", title: "Turkish channels — loading list…" },
+      { kind: "live", channel: "UCvFudBDDILdDljN4VIZ4Msw", title: "TRT 1" },
+      { kind: "live", channel: "UCBgTP2LOFVPmq15W-RH-WXA", title: "TRT Haber" },
+      { kind: "live", channel: "UCfYNqluOf8EbQkL44otydMw", title: "TRT Spor" },
+      { kind: "live", channel: "UCdVBWUBCuREx1Q2Ikw9R8Mw", title: "TRT Belgesel" },
+      { kind: "live", channel: "UCA9hDdBlGptiL0eUftorgHg", title: "TRT Müzik" },
+      { kind: "live", channel: "UCrFf5dtMe6M1XJHqbKJ4X6Q", title: "TRT Çocuk" },
+      { kind: "live", channel: "UCib1E6oJRLd2pXkxqzxyg7A", title: "TRT Avaz" },
+      { kind: "live", channel: "UC7fWeaHhqgM4Ry-RMpM2YYw", title: "TRT World" },
+      { kind: "live", channel: "UCFoe1tg8MuHjRzmqXtV816A", title: "Kanal D" },
+      { kind: "live", channel: "UC9JMe_We017gYrRc7kZHgmg", title: "Show TV" },
+      { kind: "live", channel: "UCUVZ7T_kwkxDOGFcDlFI-hg", title: "atv" },
+      { kind: "live", channel: "UCsFINj3y7SjBaeUxiSdRjlA", title: "Star TV" },
+      { kind: "live", channel: "UCJe13zu6MyE6Oueac41KAqg", title: "NOW" },
+      { kind: "live", channel: "UCp4N3g1zcvp8WE2qJ_JKqBg", title: "TV8" },
+      { kind: "live", channel: "UCephDYPmoVrQhEaZb0gS0Iw", title: "Beyaz TV" },
+      { kind: "live", channel: "UC0eqqV7viCLfcT39SphmHBQ", title: "Kanal 7" },
+      { kind: "live", channel: "UC9TDTjbOjFB9jADmPhSAPsw", title: "NTV" },
+      { kind: "live", channel: "UCV6zcRug6Hqp1UX_FdyUeBg", title: "CNN Türk" },
+      { kind: "live", channel: "UClGZC_r-sUcBdElAtDSrQ5g", title: "Habertürk" },
+      { kind: "live", channel: "UCzgrZ-CndOoylh2_e72nSBQ", title: "TGRT Haber" },
+      { kind: "live", channel: "UCKQhfw-lzz0uKnE1fY1PsAA", title: "A Haber" },
+      { kind: "live", channel: "UCJElRTCNEmLemgirqvsW63Q", title: "A Spor" },
+      { kind: "live", channel: "UCApLxl6oYQafxvykuoC2uxQ", title: "Bloomberg HT" },
+      { kind: "live", channel: "UCf_ResXZzE-o18zACUEmyvQ", title: "Halk TV" },
+      { kind: "live", channel: "UCOulx_rep5O4i9y6AyDqVvw", title: "Sözcü TV" },
+      { kind: "live", channel: "UCoHnRpOS5rL62jTmSDO5Npw", title: "Tele1" },
+      { kind: "live", channel: "UC6T0L26KS1NHMPbTwI1L4Eg", title: "Ulusal Kanal" },
+      { kind: "live", channel: "UC7nLr-rPOKYhRE4wRZoLxkg", title: "Euronews Türkçe" },
+      { kind: "live", channel: "UChNgvcVZ_ggDdZ0zCcuuzFw", title: "Bengütürk TV" },
     ],
   },
   {
     key: "videos", label: "Local videos", icon: "📼",
     items: [
-      { kind: "video", id: "3UyRutd-PBs", title: "Salda Gölü Tabiat Parkı" },
-      { kind: "video", id: "1Z5afytTsL4", title: "A day at the lake" },
-      { kind: "video", id: "3VltDf3IYkg", title: "Salda from above" },
+      { kind: "video", id: "Fyr4MM1ztMY", title: "Güney köyü, Yeşilova — 4K drone" },
+      { kind: "video", id: "A5LThih7ZZg", title: "Yeşilova, Burdur — 4K UHD" },
+      { kind: "video", id: "1w_k-xXU-NE", title: "Burdur Yeşilova — tanıtım" },
+      { kind: "video", id: "e3NKWZAc2xg", title: "Salda Gölü — tanıtım filmi" },
+      { kind: "video", id: "pvZZD4swQk4", title: "Salda Gölü — 4K drone" },
+      { kind: "video", id: "sksE0zD5SI4", title: "Türkiye'nin Maldivleri — Salda Gölü" },
+      { kind: "video", id: "926eAXu_Gng", title: "Salda Gölü — drone çekimi" },
+      { kind: "video", id: "rcU7o2xnAv0", title: "Niyazlar köyü, Yeşilova" },
     ],
   },
   {
     key: "music", label: "Local music", icon: "🎵",
     items: [
-      { kind: "note", title: "Community radio", note: "No free village music feed exists yet. Members can submit local recordings and folk sets — they'll play here." },
+      { kind: "video", id: "4SdVRekdnHI", title: "Erik Dalı Gevrektir — Kadir Türen (Dirmil, Yeşilova)" },
+      { kind: "video", id: "1QmigAWH4rQ", title: "Burdur türküleri — Ümran Özdemir" },
+      { kind: "video", id: "y8m1k6WrIUU", title: "Burdur türküleri — Mehmet Koparan" },
+      { kind: "video", id: "7oQlgihwelQ", title: "Şu Burdur'un Çalgısı — Uğur Önür" },
+      { kind: "video", id: "3jlDczTQm_k", title: "Aman Burdur — Nurcan Altınok" },
     ],
   },
   {
     key: "film", label: "Local film", icon: "🎬",
     items: [
-      { kind: "note", title: "Village cinema", note: "Short films and documentaries about Güney & Salda will screen here as the community adds them." },
+      { kind: "video", id: "vNjjlQ8EycA", title: "Tosun Paşa (4K) — Arzu Film" },
+      { kind: "video", id: "9mKns5lC0Ms", title: "Kibar Feyzo (4K) — Arzu Film" },
+      { kind: "video", id: "EyJRf53lF6g", title: "Süt Kardeşler (4K) — Arzu Film" },
+      { kind: "video", id: "ZDoLID8feBU", title: "Şaban Oğlu Şaban — Arzu Film" },
+      { kind: "video", id: "0u2XHF5q6pM", title: "Selvi Boylum Al Yazmalım (1977)" },
     ],
   },
 ];
