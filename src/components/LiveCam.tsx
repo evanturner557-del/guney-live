@@ -77,6 +77,9 @@ export default function LiveCam() {
         <div className="flex items-center gap-1.5">
           <span className="text-sm">📺</span>
           <h3 className="text-xs font-semibold uppercase tracking-wide text-sage">Salda TV</h3>
+          <span className="ml-auto flex items-center" title="Feeds embedded">
+            <span className="led led-live" aria-hidden />
+          </span>
         </div>
         <div className="mt-2">
           <p className="text-sm leading-snug">Live lake camera, local videos, music & film — on the village set.</p>

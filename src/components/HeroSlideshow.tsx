@@ -21,7 +21,7 @@ export default function HeroSlideshow({ images }: { images: string[] }) {
         <img
           key={idx} src={src} alt="Güney & Lake Salda" aria-hidden={idx !== i}
           className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000"
-          style={{ opacity: idx === i ? 1 : 0 }}
+          style={{ opacity: idx === i ? 1 : 0, filter: "saturate(1.2) contrast(1.1) brightness(1.03)" }}
         />
       ))}
     </div>

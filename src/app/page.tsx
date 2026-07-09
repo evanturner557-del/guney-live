@@ -84,7 +84,7 @@ export default async function Home() {
       <section className="relative">
         <div className="absolute inset-0 -z-10 overflow-hidden">
           <HeroSlideshow images={heroImages} />
-          <div className="absolute inset-0 bg-gradient-to-b from-cream/70 via-cream/80 to-cream" />
+          <div className="absolute inset-0 bg-gradient-to-b from-cream/25 via-cream/40 to-cream" />
         </div>
         <div className="mx-auto max-w-5xl px-4 py-16 sm:py-24 text-center">
           <p className="text-sm tracking-widest uppercase text-terra-deep mb-3">Yeşilova · Burdur · Türkiye</p>
