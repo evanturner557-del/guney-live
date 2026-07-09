@@ -1,0 +1,137 @@
+import {
+  Weather, Air, Prayer, Rates, Quakes,
+  wmoLabel, wmoIcon, moonPhase, fmtTime, dayName,
+} from "@/lib/village";
+
+function Card({ title, icon, children, className = "" }: {
+  title: string; icon?: string; children: React.ReactNode; className?: string;
+}) {
+  return (
+    <div className={`bg-white rounded-2xl border border-sand p-4 ${className}`}>
+      <div className="flex items-center gap-1.5 mb-2">
+        {icon && <span className="text-sm">{icon}</span>}
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-faded">{title}</h3>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+export function Dashboard({ weather, air, prayer, rates, quakes }: {
+  weather: Weather; air: Air; prayer: Prayer; rates: Rates; quakes: Quakes;
+}) {
+  const moon = moonPhase();
+  return (
+    <section className="mt-4">
+      <div className="flex items-baseline justify-between mb-4">
+        <h2 className="display text-2xl font-semibold text-olive-deep">The village, right now</h2>
+        <span className="text-xs text-faded">live · updates through the day</span>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {/* Weather — spans 2 */}
+        {weather && (
+          <Card title="Weather" icon={wmoIcon(weather.now.code, weather.now.isDay)} className="col-span-2">
+            <div className="flex items-end gap-3">
+              <span className="display text-4xl font-semibold leading-none">{Math.round(weather.now.temp)}°</span>
+              <div className="text-sm text-faded pb-0.5">
+                <p className="text-ink">{wmoLabel(weather.now.code)}</p>
+                <p>{Math.round(weather.today.min)}–{Math.round(weather.today.max)}° · 💨 {Math.round(weather.now.wind)} km/h</p>
+              </div>
+            </div>
+            <div className="flex justify-between mt-3 pt-3 border-t border-sand">
+              {weather.daily.slice(1, 6).map((d) => (
+                <div key={d.date} className="text-center">
+                  <p className="text-[11px] text-faded">{dayName(d.date)}</p>
+                  <p className="text-base leading-tight">{wmoIcon(d.code)}</p>
+                  <p className="text-[11px]"><span className="text-ink">{Math.round(d.max)}°</span> <span className="text-faded">{Math.round(d.min)}°</span></p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {/* Sun & Moon */}
+        {weather && (
+          <Card title="Sun & moon" icon="🌅">
+            <div className="space-y-1 text-sm">
+              <p className="flex justify-between"><span className="text-faded">Sunrise</span><span>{fmtTime(weather.today.sunrise)}</span></p>
+              <p className="flex justify-between"><span className="text-faded">Sunset</span><span>{fmtTime(weather.today.sunset)}</span></p>
+              <p className="flex justify-between pt-1 border-t border-sand"><span className="text-faded">UV max</span><span>{Math.round(weather.today.uv)}</span></p>
+              <p className="flex justify-between"><span className="text-faded">Moon</span><span>{moon.icon} {moon.name.split(" ")[0]}</span></p>
+            </div>
+          </Card>
+        )}
+
+        {/* Prayer times */}
+        {prayer && (
+          <Card title="Prayer times" icon="🕌">
+            <div className="grid grid-cols-3 gap-x-2 gap-y-1 text-sm">
+              {prayer.timings.map((p) => (
+                <div key={p.name} className={p.name === prayer.next ? "text-terra-deep font-semibold" : ""}>
+                  <p className="text-[10px] text-faded uppercase leading-tight">{p.name}</p>
+                  <p className="leading-tight">{p.time}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-faded mt-2 pt-2 border-t border-sand">{prayer.hijri} · Diyanet</p>
+          </Card>
+        )}
+
+        {/* Air quality */}
+        {air && (
+          <Card title="Air quality" icon="💨">
+            <div className="flex items-end gap-2">
+              <span className="display text-3xl font-semibold leading-none" style={{ color: air.color }}>{air.aqi}</span>
+              <span className="text-sm pb-0.5" style={{ color: air.color }}>{air.label}</span>
+            </div>
+            <p className="text-xs text-faded mt-2">PM2.5 {air.pm25} µg/m³ · EU index</p>
+          </Card>
+        )}
+
+        {/* Currency */}
+        {rates && (
+          <Card title="Exchange (→ ₺)" icon="💷">
+            <div className="space-y-1 text-sm">
+              <p className="flex justify-between"><span className="text-faded">£1 GBP</span><span>₺{rates.GBP.toFixed(2)}</span></p>
+              <p className="flex justify-between"><span className="text-faded">€1 EUR</span><span>₺{rates.EUR.toFixed(2)}</span></p>
+              <p className="flex justify-between"><span className="text-faded">$1 USD</span><span>₺{rates.USD.toFixed(2)}</span></p>
+            </div>
+          </Card>
+        )}
+
+        {/* Earthquakes */}
+        {quakes && (
+          <Card title="Quakes (250 km)" icon="🌍" className="col-span-2 md:col-span-1">
+            {quakes.list.length === 0 ? (
+              <p className="text-sm text-faded">Nothing notable.</p>
+            ) : (
+              <div className="space-y-1 text-sm">
+                {quakes.list.slice(0, 3).map((q, i) => (
+                  <p key={i} className="flex justify-between gap-2">
+                    <span className={`font-semibold ${q.mag >= 4 ? "text-terra-deep" : "text-ink"}`}>M{q.mag.toFixed(1)}</span>
+                    <span className="text-faded truncate text-[13px]">{q.place || "nearby"}</span>
+                  </p>
+                ))}
+              </div>
+            )}
+            <p className="text-[11px] text-faded mt-2 pt-2 border-t border-sand">USGS</p>
+          </Card>
+        )}
+
+        {/* Live camera — honest link-out */}
+        <a href="https://saldagolu.gov.tr/saldagolu/canli.html" target="_blank" rel="noopener noreferrer"
+          className="bg-olive-deep text-cream rounded-2xl p-4 flex flex-col justify-between hover:bg-olive transition-colors col-span-2 md:col-span-1">
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm">📹</span>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-sage">Live Salda camera</h3>
+          </div>
+          <div className="mt-2">
+            <p className="text-sm leading-snug">Watch Lake Salda live, 24/7 — official government stream.</p>
+            <p className="text-xs text-sage mt-2">Open camera →</p>
+          </div>
+        </a>
+      </div>
+    </section>
+  );
+}
