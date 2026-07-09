@@ -22,11 +22,15 @@ export function Dashboard({ weather, air, prayer, rates, quakes }: {
   weather: Weather; air: Air; prayer: Prayer; rates: Rates; quakes: Quakes;
 }) {
   const moon = moonPhase();
+  const live = Boolean(weather); // core live feed reachable
   return (
     <section className="mt-4">
-      <div className="flex items-baseline justify-between mb-4">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="display text-2xl font-semibold text-olive-deep">The village, right now</h2>
-        <span className="text-xs text-faded">live · updates through the day</span>
+        <span className="flex items-center gap-2 text-xs text-faded" title={live ? "Live feeds are up" : "Live feeds are down"}>
+          <span className={`led ${live ? "led-live" : "led-dead"}`} aria-hidden />
+          {live ? "Live" : "Offline"}
+        </span>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

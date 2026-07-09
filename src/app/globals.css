@@ -60,4 +60,13 @@ h1, h2, h3, .display {
 .note-tilt-1 { transform: rotate(-1.4deg); }
 .note-tilt-2 { transform: rotate(1.1deg); }
 .note-tilt-3 { transform: rotate(-0.6deg); }
+
+/* Status LED (live / dead indicator) */
+@keyframes led-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
+  50% { box-shadow: 0 0 7px 2px currentColor; opacity: 0.55; }
+}
+.led { display: inline-block; width: 9px; height: 9px; border-radius: 9999px; background: currentColor; animation: led-pulse 1.6s ease-in-out infinite; }
+.led-live { color: #22c55e; }
+.led-dead { color: #dc2626; }
 .note-tilt-4 { transform: rotate(0.9deg); }
