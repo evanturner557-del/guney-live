@@ -126,7 +126,7 @@ export default async function Home() {
       </section>
 
       <div className="mx-auto max-w-5xl px-4">
-        <Dashboard weather={weather} air={air} airCompare={airCompare} prayer={prayer} rates={rates} quakes={quakes} />
+        <Dashboard weather={weather} air={air} airCompare={airCompare} prayer={prayer} rates={rates} quakes={quakes} t={t} />
 
         {/* Map + category gallery */}
         <section className="grid md:grid-cols-2 gap-6 mt-10">
@@ -142,7 +142,7 @@ export default async function Home() {
               <h2 className="display text-2xl font-semibold text-olive-deep">{t("home.pictures")}</h2>
               <Link href="/gallery" className="text-sm text-terra hover:underline">{t("home.all")}</Link>
             </div>
-            <CategoryCovers stats={stats} />
+            <CategoryCovers stats={stats} t={t} />
           </div>
         </section>
 
@@ -174,7 +174,7 @@ export default async function Home() {
                 <ColLabel>{t("home.col.doors")}</ColLabel>
                 {opps.slice(0, 3).map((o, i) => (
                   <Link key={o.id} href="/opportunities" className={`note note-tilt-${(i % 4) + 1} block rounded-sm px-4 py-4 hover:-translate-y-0.5 transition-transform`}>
-                    <span className="text-[11px] font-medium text-terra-deep uppercase">{oppTypeLabel[o.type] ?? o.type}</span>
+                    <span className="text-[11px] font-medium text-terra-deep uppercase">{oppTypeLabel[o.type] ? t(`opp.type.${o.type}`) : o.type}</span>
                     <h3 className="font-semibold leading-snug mt-0.5 text-ink">{o.title}</h3>
                     <p className="text-[13px] text-faded mt-1.5 line-clamp-3">{o.summary}</p>
                   </Link>
