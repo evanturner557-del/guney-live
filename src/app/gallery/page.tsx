@@ -1,10 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import CategoryCovers, { type CatStat } from "@/components/CategoryCovers";
 import { CATEGORIES } from "@/lib/categories";
+import { getServerLang } from "@/lib/lang-server";
+import { makeT } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
 export default async function GalleryPage() {
+  const t = makeT(await getServerLang());
   const supabase = await createClient();
   const { data } = await supabase.from("photos").select("category, url, created_at").order("created_at", { ascending: false });
   const rows = data ?? [];
@@ -20,15 +23,12 @@ export default async function GalleryPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
-      <h1 className="display text-3xl sm:text-4xl font-semibold text-olive-deep">The village in pictures</h1>
+      <h1 className="display text-3xl sm:text-4xl font-semibold text-olive-deep">{t("gallery.title")}</h1>
       <p className="text-faded mt-2 max-w-2xl">
-        Güney and Lake Salda, by place. Salda is seeded with openly-licensed photos;
-        the village, mountain, food, lavender and faces are filling up with community
-        photos. Tap a category to look inside, or open it and add your own — old family
-        photos from the diaspora especially welcome.
+        {t("gallery.intro")}
       </p>
       <div className="mt-8">
-        <CategoryCovers stats={stats} />
+        <CategoryCovers stats={stats} t={t} />
       </div>
     </div>
   );
