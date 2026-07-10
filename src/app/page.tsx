@@ -7,6 +7,8 @@ import CategoryCovers, { type CatStat } from "@/components/CategoryCovers";
 import VillageMap from "@/components/VillageMap";
 import { CATEGORIES } from "@/lib/categories";
 import { getWeather, getAir, getAirCompare, getPrayer, getRates, getQuakes } from "@/lib/village";
+import { getServerLang } from "@/lib/lang-server";
+import { makeT } from "@/lib/i18n";
 
 export const revalidate = 1800;
 
@@ -65,6 +67,7 @@ function ColLabel({ children }: { children: React.ReactNode }) {
 }
 
 export default async function Home() {
+  const t = makeT(await getServerLang());
   const supabase = await createClient();
   const [weather, air, airCompare, prayer, rates, quakes, postsRes, eventsRes, oppsRes, featRes, catRes] =
     await Promise.all([
@@ -108,17 +111,16 @@ export default async function Home() {
           <div className="absolute inset-0 bg-gradient-to-b from-cream/25 via-cream/40 to-cream" />
         </div>
         <div className="mx-auto max-w-5xl px-4 py-16 sm:py-24 text-center">
-          <p className="text-sm tracking-widest uppercase text-terra-deep mb-3">Yeşilova · Burdur · Türkiye</p>
+          <p className="text-sm tracking-widest uppercase text-terra-deep mb-3">{t("home.eyebrow")}</p>
           <h1 className="display text-4xl sm:text-6xl font-semibold text-olive-deep leading-tight drop-shadow-sm">
-            The village of Güney,<br />open to the world.
+            {t("home.title")}
           </h1>
           <p className="mt-5 max-w-xl mx-auto text-lg text-ink/80">
-            A 900-year-old village, 8 km from Lake Salda. This is its digital home —
-            what&apos;s happening, who needs help, and what you can build here.
+            {t("home.subtitle")}
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link href="/join" className="px-6 py-3 rounded-full bg-terra text-cream font-medium hover:bg-terra-deep transition-colors shadow-sm">Become part of Güney</Link>
-            <Link href="/guide" className="px-6 py-3 rounded-full bg-white/80 backdrop-blur border border-olive text-olive-deep font-medium hover:bg-white transition-colors">Plan a visit</Link>
+            <Link href="/join" className="px-6 py-3 rounded-full bg-terra text-cream font-medium hover:bg-terra-deep transition-colors shadow-sm">{t("home.cta.join")}</Link>
+            <Link href="/guide" className="px-6 py-3 rounded-full bg-white/80 backdrop-blur border border-olive text-olive-deep font-medium hover:bg-white transition-colors">{t("home.cta.visit")}</Link>
           </div>
         </div>
       </section>
@@ -130,15 +132,15 @@ export default async function Home() {
         <section className="grid md:grid-cols-2 gap-6 mt-10">
           <div>
             <div className="flex items-baseline justify-between mb-3">
-              <h2 className="display text-2xl font-semibold text-olive-deep">Where it is</h2>
-              <a href="https://www.google.com/maps/search/?api=1&query=G%C3%BCney%2C+Ye%C5%9Filova%2C+Burdur" target="_blank" rel="noopener noreferrer" className="text-sm text-terra hover:underline">Directions →</a>
+              <h2 className="display text-2xl font-semibold text-olive-deep">{t("home.where")}</h2>
+              <a href="https://www.google.com/maps/search/?api=1&query=G%C3%BCney%2C+Ye%C5%9Filova%2C+Burdur" target="_blank" rel="noopener noreferrer" className="text-sm text-terra hover:underline">{t("home.directions")}</a>
             </div>
             <VillageMap />
           </div>
           <div>
             <div className="flex items-baseline justify-between mb-3">
-              <h2 className="display text-2xl font-semibold text-olive-deep">The village in pictures</h2>
-              <Link href="/gallery" className="text-sm text-terra hover:underline">All →</Link>
+              <h2 className="display text-2xl font-semibold text-olive-deep">{t("home.pictures")}</h2>
+              <Link href="/gallery" className="text-sm text-terra hover:underline">{t("home.all")}</Link>
             </div>
             <CategoryCovers stats={stats} />
           </div>
@@ -150,26 +152,26 @@ export default async function Home() {
             <div className="grid md:grid-cols-3 gap-6">
               {/* Latest */}
               <div className="space-y-4">
-                <ColLabel>Latest from the village</ColLabel>
+                <ColLabel>{t("home.col.latest")}</ColLabel>
                 {posts.slice(0, 3).map((p, i) => <Note key={p.id} post={p} tilt={(i % 4) + 1} />)}
                 {pinCols[0].map((p, i) => <PhotoPin key={p.url} url={p.url} caption={p.caption} tilt={((i + 1) % 4) + 1} align={aligns[i % 3]} />)}
                 {posts.slice(3, 5).map((p, i) => <Note key={p.id} post={p} tilt={((i + 2) % 4) + 1} />)}
-                <Link href="/community" className="block text-center text-sm text-cream/90 hover:text-cream underline pt-1">All updates →</Link>
+                <Link href="/community" className="block text-center text-sm text-cream/90 hover:text-cream underline pt-1">{t("home.allupdates")}</Link>
               </div>
 
               {/* Coming up */}
               <div className="space-y-4">
-                <ColLabel>Coming up</ColLabel>
+                <ColLabel>{t("home.col.coming")}</ColLabel>
                 {events.length === 0 ? (
-                  <div className="note note-tilt-2 rounded-sm px-4 py-6 text-center text-sm text-faded">No events pinned yet.</div>
+                  <div className="note note-tilt-2 rounded-sm px-4 py-6 text-center text-sm text-faded">{t("home.noevents")}</div>
                 ) : events.map((e, i) => <Note key={e.id} post={e} tilt={(i % 4) + 1} />)}
                 {pinCols[1].map((p, i) => <PhotoPin key={p.url} url={p.url} caption={p.caption} tilt={((i + 3) % 4) + 1} align={aligns[(i + 1) % 3]} />)}
-                <Link href="/community?type=event" className="block text-center text-sm text-cream/90 hover:text-cream underline pt-1">All events →</Link>
+                <Link href="/community?type=event" className="block text-center text-sm text-cream/90 hover:text-cream underline pt-1">{t("home.allevents")}</Link>
               </div>
 
               {/* Open doors */}
               <div className="space-y-4">
-                <ColLabel>Open doors</ColLabel>
+                <ColLabel>{t("home.col.doors")}</ColLabel>
                 {opps.slice(0, 3).map((o, i) => (
                   <Link key={o.id} href="/opportunities" className={`note note-tilt-${(i % 4) + 1} block rounded-sm px-4 py-4 hover:-translate-y-0.5 transition-transform`}>
                     <span className="text-[11px] font-medium text-terra-deep uppercase">{oppTypeLabel[o.type] ?? o.type}</span>
@@ -178,7 +180,7 @@ export default async function Home() {
                   </Link>
                 ))}
                 {pinCols[2].map((p, i) => <PhotoPin key={p.url} url={p.url} caption={p.caption} tilt={((i + 2) % 4) + 1} align={aligns[(i + 2) % 3]} />)}
-                <Link href="/opportunities" className="block text-center text-sm text-cream/90 hover:text-cream underline pt-1">All opportunities →</Link>
+                <Link href="/opportunities" className="block text-center text-sm text-cream/90 hover:text-cream underline pt-1">{t("home.allopps")}</Link>
               </div>
             </div>
           </div>
@@ -187,9 +189,9 @@ export default async function Home() {
         {/* Orientation */}
         <section className="my-12 grid sm:grid-cols-3 gap-4">
           {[
-            { href: "/guide", title: "New here?", body: "Where Güney is, how to get here, where to stay — the practical guide." },
-            { href: "/opportunities", title: "Want to build?", body: "Stone houses to restore, land to farm, a guesthouse waiting to exist." },
-            { href: "/join", title: "Want in?", body: "Join the community — villagers, diaspora, newcomers, visitors. All of it counts." },
+            { href: "/guide", title: t("home.orient.new.t"), body: t("home.orient.new.b") },
+            { href: "/opportunities", title: t("home.orient.build.t"), body: t("home.orient.build.b") },
+            { href: "/join", title: t("home.orient.in.t"), body: t("home.orient.in.b") },
           ].map((c) => (
             <Link key={c.href} href={c.href} className="bg-sand/60 rounded-2xl p-6 hover:bg-sand transition-colors">
               <h3 className="display text-xl font-semibold text-olive-deep">{c.title}</h3>
