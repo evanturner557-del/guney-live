@@ -36,11 +36,9 @@ export function skyGradient(phase: Phase): string {
   return PHASE_BG[phase];
 }
 
+const toMin = (iso: string) => Number(iso.slice(11, 13)) * 60 + Number(iso.slice(14, 16));
+
 export function timePhase(sunriseISO: string, sunsetISO: string, nowMin: number): Phase {
-  const toMin = (iso: string) => {
-    const h = Number(iso.slice(11, 13)); const m = Number(iso.slice(14, 16));
-    return h * 60 + m;
-  };
   const sr = toMin(sunriseISO), ss = toMin(sunsetISO);
   const w = 45; // transition window, minutes
   if (nowMin < sr - w || nowMin > ss + w) return "night";
@@ -49,31 +47,49 @@ export function timePhase(sunriseISO: string, sunsetISO: string, nowMin: number)
   return "day";
 }
 
-export default function WeatherScene({ code, phase }: { code: number; phase: Phase }) {
+// Where the sun (daytime) or moon (night) sits, as an arc across the sky:
+// rises at the left horizon, peaks overhead at the middle of its span, sets at
+// the right horizon. xPct = 0..100 across the width; arc = 0 (horizon) .. 1 (peak).
+export type Celestial = { kind: "sun" | "moon"; xPct: number; arc: number };
+export function celestialPos(sunriseISO: string, sunsetISO: string, nowMin: number): Celestial {
+  const sr = toMin(sunriseISO), ss = toMin(sunsetISO), DAY = 24 * 60;
+  if (nowMin >= sr && nowMin <= ss) {
+    const frac = (nowMin - sr) / Math.max(1, ss - sr);
+    return { kind: "sun", xPct: frac * 100, arc: Math.sin(frac * Math.PI) };
+  }
+  // night: from sunset, wrapping midnight, to next sunrise
+  const nightLen = (DAY - ss) + sr;
+  const elapsed = nowMin > ss ? nowMin - ss : (DAY - ss) + nowMin;
+  const frac = elapsed / Math.max(1, nightLen);
+  return { kind: "moon", xPct: frac * 100, arc: Math.sin(frac * Math.PI) };
+}
+
+export default function WeatherScene({ code, phase, celestial }: { code: number; phase: Phase; celestial?: Celestial }) {
   const sky = skyFromCode(code);
   const overcast = sky === "cloud" || sky === "rain" || sky === "snow" || sky === "storm";
   const bg = overcast ? OVERCAST[phase] : PHASE_BG[phase];
-  const lightCelestial = phase === "day" || phase === "dawn"; // sun vs moon
+  // position: peak (arc=1) sits near the top; horizon (arc=0) sits low
+  const cel = celestial;
+  const celStyle = cel ? { left: `${cel.xPct}%`, top: `${(1 - cel.arc) * 60 + 5}%`, transform: "translate(-50%,-50%)" } : {};
+  const celOpacity = overcast ? 0.4 : 1;
 
   return (
     <div className="ws" style={{ background: bg }} aria-hidden>
       {/* stars at night when sky is clear-ish */}
       {phase === "night" && sky === "clear" && (
         <div className="ws-stars">
-          {Array.from({ length: 18 }).map((_, i) => (
+          {Array.from({ length: 26 }).map((_, i) => (
             <span key={i} className="ws-star" style={{
-              left: `${(i * 53) % 100}%`, top: `${(i * 29) % 70}%`,
+              left: `${(i * 37) % 100}%`, top: `${(i * 29) % 75}%`,
               animationDelay: `${(i % 6) * 0.4}s`,
             }} />
           ))}
         </div>
       )}
 
-      {/* sun / moon */}
-      {sky === "clear" && (
-        lightCelestial
-          ? <div className="ws-sun" />
-          : <div className="ws-moon" />
+      {/* sun / moon — positioned by time of day */}
+      {cel && (
+        <div className={cel.kind === "sun" ? "ws-sun" : "ws-moon"} style={{ ...celStyle, opacity: celOpacity }} />
       )}
 
       {/* drifting clouds for cloud/rain/snow/storm */}

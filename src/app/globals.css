@@ -78,14 +78,14 @@ h1, h2, h3, .display {
 @keyframes ws-twinkle { 0%,100% { opacity: .25; } 50% { opacity: .95; } }
 
 .ws-sun {
-  position: absolute; top: 14px; right: 20px; width: 42px; height: 42px; border-radius: 50%;
+  position: absolute; width: 44px; height: 44px; border-radius: 50%;
   background: radial-gradient(circle at 40% 40%, #fff6c8, #ffd24a 60%, #ffb020 100%);
   box-shadow: 0 0 22px 8px rgba(255,206,74,.55);
   animation: ws-sun-pulse 4.5s ease-in-out infinite;
 }
-@keyframes ws-sun-pulse { 0%,100% { box-shadow: 0 0 18px 6px rgba(255,206,74,.5); } 50% { box-shadow: 0 0 30px 12px rgba(255,206,74,.7); } }
+@keyframes ws-sun-pulse { 0%,100% { box-shadow: 0 0 18px 6px rgba(255,206,74,.5); } 50% { box-shadow: 0 0 34px 14px rgba(255,206,74,.7); } }
 .ws-moon {
-  position: absolute; top: 14px; right: 22px; width: 34px; height: 34px; border-radius: 50%;
+  position: absolute; width: 34px; height: 34px; border-radius: 50%;
   background: radial-gradient(circle at 65% 35%, #fdfdf0, #d8dceb 70%, #b9c0d6 100%);
   box-shadow: 0 0 16px 4px rgba(220,228,255,.35), inset -6px -3px 0 -2px rgba(150,160,190,.5);
 }
