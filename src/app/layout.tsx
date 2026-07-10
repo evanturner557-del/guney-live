@@ -35,7 +35,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <footer className="border-t border-sand mt-16">
           <div className="mx-auto max-w-5xl px-4 py-8 text-sm text-faded flex flex-wrap gap-4 justify-between">
             <p>Güney, Yeşilova, Burdur — the village, online.</p>
-            <p>Built by the community, for the community.</p>
+            <nav className="flex gap-4">
+              <a href="/privacy" className="hover:text-ink">Privacy</a>
+              <a href="/terms" className="hover:text-ink">Terms</a>
+              <a href="mailto:support@guney.live" className="hover:text-ink">Contact</a>
+            </nav>
           </div>
         </footer>
       </body>

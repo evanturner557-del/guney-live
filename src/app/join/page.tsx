@@ -139,12 +139,25 @@ function JoinInner() {
                 <option value="visitor">I&apos;m visiting or just curious</option>
               </select>
             </Field>
-            <Field label="Phone (optional — for direct messages later)"><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+90 …" className={inputCls} /></Field>
+            {/* Phone — highlighted as a real step, not a buried optional */}
+            <div className="rounded-xl border border-olive/30 bg-olive/5 p-3.5">
+              <label className="block text-sm">
+                <span className="flex items-center gap-2 font-medium text-olive-deep">
+                  <span className="text-base">📱</span> Add your phone number
+                </span>
+                <span className="block text-[12px] text-faded mt-0.5 mb-2">
+                  Recommended. It&apos;s how the village reaches you — direct messages, replies, and important
+                  updates — and it makes signing back in quicker later. We never show it publicly or share it.
+                </span>
+                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+90 5xx xxx xx xx"
+                  className="w-full border border-olive/30 rounded-lg px-3 py-2.5 text-sm bg-white" />
+              </label>
+            </div>
 
             <div className="space-y-2 pt-1">
               <label className="flex items-start gap-2 text-[13px] cursor-pointer">
                 <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="accent-olive mt-0.5" />
-                <span className="text-faded">I agree to the <Link href="/guide" className="text-terra underline">terms</Link> and the use of cookies to keep me signed in.</span>
+                <span className="text-faded">I agree to the <Link href="/terms" className="text-terra underline">terms</Link> and <Link href="/privacy" className="text-terra underline">privacy policy</Link>, and the use of cookies to keep me signed in.</span>
               </label>
               <label className="flex items-start gap-2 text-[13px] cursor-pointer">
                 <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} className="accent-olive mt-0.5" />
