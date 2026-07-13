@@ -1506,29 +1506,6 @@ export default async function JoinPage() {
   if (!user) return <JoinForm />;
 
   const { data: me } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
-  return <AccountPanelWithId userId={user.id} me={me} email={user.email ?? ""} />;
-}
-
-function AccountPanelWithId({ userId, me, email }: { userId: string; me: typeof import("@/components/AccountPanel") extends never ? never : Parameters<typeof AccountPanel>[0]["me"]; email: string }) {
-  return <AccountPanel me={me} email={email} userId={userId} />;
-}
-```
-
-This intermediate wrapper is unnecessary complexity — simplify directly instead. Replace the whole file with:
-
-```tsx
-import { createClient } from "@/lib/supabase/server";
-import JoinForm from "./JoinForm";
-import AccountPanel from "@/components/AccountPanel";
-
-export const dynamic = "force-dynamic";
-
-export default async function JoinPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return <JoinForm />;
-
-  const { data: me } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
   return <AccountPanel me={me} email={user.email ?? ""} userId={user.id} />;
 }
 ```
@@ -2025,6 +2002,6 @@ This triggers the Vercel production deploy. Confirm the deploy succeeds (check t
 - No content duplication (added constraint from Evan's follow-up): explicitly covered by Task 3 (Home drops gallery/photo-pins), Task 6 (single member directory location), Task 8b (single profile-edit location), and re-verified in Task 12 Step 4. ✓
 - Homepage clear single message (added constraint): Task 3 hero copy. ✓
 
-**2. Placeholder scan:** none found — the one near-miss was the `AccountPanelWithId` false start in Task 8b Step 3, which is explicitly called out as unnecessary and replaced with the simplified final version in the same step (not left as an unresolved TODO).
+**2. Placeholder scan:** none found.
 
 **3. Type consistency:** `Card`/`PageHeader` (Task 2) signatures used identically in Tasks 3, 4, 5, 7. `CommunityTabs()` (Task 4) takes no props, matches its one call site (Task 4/6 layout). `YourCorner({ userId })` (Task 6) matches its call site in `community/layout.tsx`. `AccountPanel({ me, email, userId })` (Task 8b Step 4, final signature) matches its call site in `join/page.tsx` (Task 8b Step 3, final version). `Dashboard({ weather, air, airCompare, prayer, rates, quakes })` (Task 9, no `t`) matches its call site in `page.tsx` (Task 3, called without `t` — Task 3's known-failing build line is exactly resolved by Task 9). `CategoryCovers({ stats })` (Task 7, no `t`) matches its call sites in `page.tsx`... **correction:** Task 3's rewritten Home no longer calls `CategoryCovers` at all (gallery duplication removed per spec) — only `guide/page.tsx` (Task 7) calls it. Confirmed no stale call site remains.
