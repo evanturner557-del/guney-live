@@ -60,7 +60,7 @@ export async function createOpportunity(formData: FormData) {
   await supabase.from("opportunities").insert({
     type, title, summary, details: details || null, contact: contact || null, created_by: user.id,
   });
-  revalidatePath("/opportunities");
+  revalidatePath("/community/opportunities");
 }
 
 export async function updateProfile(formData: FormData) {
