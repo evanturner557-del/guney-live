@@ -1,6 +1,19 @@
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 
+export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <div className={`rounded-2xl border border-sand bg-white p-5 ${className}`}>{children}</div>;
+}
+
+export function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <div className="max-w-2xl">
+      <h1 className="display text-3xl sm:text-4xl font-semibold text-olive-deep">{title}</h1>
+      {subtitle && <p className="text-faded mt-2">{subtitle}</p>}
+    </div>
+  );
+}
+
 export const postTypeMeta: Record<string, { label: string; cls: string }> = {
   update: { label: "Update", cls: "bg-sage/30 text-olive-deep" },
   event: { label: "Event", cls: "bg-terra/15 text-terra-deep" },
