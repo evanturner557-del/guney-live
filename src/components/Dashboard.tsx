@@ -9,21 +9,17 @@ import WeatherScene, { timePhase, celestialPos, type Phase } from "@/components/
 import AirInfo from "@/components/AirInfo";
 import PrayerInfo from "@/components/PrayerInfo";
 
-type T = (k: string) => string;
-
-function Led({ live, t }: { live: boolean; t: T }) {
+function Led({ live }: { live: boolean }) {
   return (
-    <span className="flex items-center" title={live ? t("dash.live") : t("dash.unavailable")}>
+    <span className="flex items-center" title={live ? "Live" : "Unavailable right now"}>
       <span className={`led ${live ? "led-live" : "led-dead"}`} aria-hidden />
     </span>
   );
 }
 
-// Glass tile — translucent so the one shared sky behind the grid shows through,
-// making the six cards read as a single sky divided into panes.
-function Card({ title, icon, live, info, children, t, className = "" }: {
+function Card({ title, icon, live, info, children, className = "" }: {
   title: string; icon?: string; live: boolean; info?: React.ReactNode;
-  children: React.ReactNode; t: T; className?: string;
+  children: React.ReactNode; className?: string;
 }) {
   return (
     <div className={`relative rounded-2xl border border-white/20 bg-black/25 backdrop-blur-md text-white p-4 shadow-sm ${className}`}>
@@ -31,19 +27,19 @@ function Card({ title, icon, live, info, children, t, className = "" }: {
         {icon && <span className="text-sm">{icon}</span>}
         <h3 className="text-xs font-semibold uppercase tracking-wide text-white/80">{title}</h3>
         {info}
-        <span className="ml-auto"><Led live={live} t={t} /></span>
+        <span className="ml-auto"><Led live={live} /></span>
       </div>
       {children}
     </div>
   );
 }
 
-function Dead({ label }: { label: string }) {
+function Dead({ label = "Feed unavailable right now." }: { label?: string }) {
   return <p className="text-sm text-white/70 py-1">{label}</p>;
 }
 
-export function Dashboard({ weather, air, airCompare, prayer, rates, quakes, t }: {
-  weather: Weather; air: Air; airCompare: AirCompare; prayer: Prayer; rates: Rates; quakes: Quakes; t: T;
+export function Dashboard({ weather, air, airCompare, prayer, rates, quakes }: {
+  weather: Weather; air: Air; airCompare: AirCompare; prayer: Prayer; rates: Rates; quakes: Quakes;
 }) {
   const moon = moonPhase();
   const generatedAt = new Date();
@@ -56,21 +52,19 @@ export function Dashboard({ weather, air, airCompare, prayer, rates, quakes, t }
   return (
     <section className="mt-4">
       <div className="flex items-baseline justify-between flex-wrap gap-1 mb-4">
-        <h2 className="display text-2xl font-semibold text-olive-deep">{t("dash.now")}</h2>
-        <p className="text-[11px] text-faded" title={t("dash.refresh.title")}>
-          {t("dash.refreshed")} {stamp} · Europe/Istanbul · {t("dash.every")}
+        <h2 className="display text-2xl font-semibold text-olive-deep">The village, right now</h2>
+        <p className="text-[11px] text-faded" title="This page regenerates from live APIs roughly every 30 minutes.">
+          Data refreshed {stamp} · Europe/Istanbul · every ~30 min
         </p>
       </div>
 
-      {/* One continuous sky behind all six cards */}
       <div className="relative rounded-3xl overflow-hidden p-2 sm:p-3">
         <div className="absolute inset-0" aria-hidden>
           <WeatherScene code={weather ? weather.now.code : 0} phase={phase} celestial={celestial} />
         </div>
 
         <div className="relative grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
-          {/* Weather — spans 2 */}
-          <Card title={t("dash.weather")} icon={weather ? wmoIcon(weather.now.code, weather.now.isDay) : "⛅"} live={Boolean(weather)} t={t} className="col-span-2">
+          <Card title="Weather" icon={weather ? wmoIcon(weather.now.code, weather.now.isDay) : "⛅"} live={Boolean(weather)} className="col-span-2">
             {weather ? (
               <>
                 <div className="flex items-end gap-3">
@@ -90,23 +84,21 @@ export function Dashboard({ weather, air, airCompare, prayer, rates, quakes, t }
                   ))}
                 </div>
               </>
-            ) : <Dead label={t("dash.weather.unavailable")} />}
+            ) : <Dead label="Weather feed unavailable right now." />}
           </Card>
 
-          {/* Sun & Moon */}
-          <Card title={t("dash.sunmoon")} icon="🌅" live={Boolean(weather)} t={t}>
+          <Card title="Sun & moon" icon="🌅" live={Boolean(weather)}>
             {weather ? (
               <div className="space-y-1 text-sm">
-                <p className="flex justify-between"><span className="text-white/70">{t("dash.sunrise")}</span><span>{fmtTime(weather.today.sunrise)}</span></p>
-                <p className="flex justify-between"><span className="text-white/70">{t("dash.sunset")}</span><span>{fmtTime(weather.today.sunset)}</span></p>
-                <p className="flex justify-between pt-1 border-t border-white/20"><span className="text-white/70">{t("dash.uvmax")}</span><span>{Math.round(weather.today.uv)}</span></p>
-                <p className="flex justify-between"><span className="text-white/70">{t("dash.moon")}</span><span>{moon.icon} {moon.name.split(" ")[0]}</span></p>
+                <p className="flex justify-between"><span className="text-white/70">Sunrise</span><span>{fmtTime(weather.today.sunrise)}</span></p>
+                <p className="flex justify-between"><span className="text-white/70">Sunset</span><span>{fmtTime(weather.today.sunset)}</span></p>
+                <p className="flex justify-between pt-1 border-t border-white/20"><span className="text-white/70">UV max</span><span>{Math.round(weather.today.uv)}</span></p>
+                <p className="flex justify-between"><span className="text-white/70">Moon</span><span>{moon.icon} {moon.name.split(" ")[0]}</span></p>
               </div>
-            ) : <Dead label={t("dash.feed.unavailable")} />}
+            ) : <Dead />}
           </Card>
 
-          {/* Prayer times */}
-          <Card title={t("dash.prayer")} icon="🕌" live={Boolean(prayer)} info={<PrayerInfo />} t={t}>
+          <Card title="Prayer times" icon="🕌" live={Boolean(prayer)} info={<PrayerInfo />}>
             {prayer ? (
               <>
                 <div className="grid grid-cols-3 gap-x-2 gap-y-1 text-sm">
@@ -119,47 +111,44 @@ export function Dashboard({ weather, air, airCompare, prayer, rates, quakes, t }
                 </div>
                 <p className="text-[11px] text-white/60 mt-2 pt-2 border-t border-white/20">{prayer.hijri} · Diyanet</p>
               </>
-            ) : <Dead label={t("dash.feed.unavailable")} />}
+            ) : <Dead />}
           </Card>
 
-          {/* Air quality */}
-          <Card title={t("dash.air")} icon="💨" live={Boolean(air)} info={<AirInfo compare={airCompare} />} t={t}>
+          <Card title="Air quality" icon="💨" live={Boolean(air)} info={<AirInfo compare={airCompare} />}>
             {air ? (
               <>
                 <div className="flex items-end gap-2">
                   <span className="display text-3xl font-semibold leading-none drop-shadow">{air.aqi}</span>
                   <span className="text-xs pb-1 px-2 py-0.5 rounded-full font-medium" style={{ background: air.color }}>{air.label}</span>
                 </div>
-                <p className="text-xs text-white/70 mt-2">PM2.5 {air.pm25} µg/m³ · {t("dash.air.euindex")}</p>
+                <p className="text-xs text-white/70 mt-2">PM2.5 {air.pm25} µg/m³ · EU index</p>
               </>
-            ) : <Dead label={t("dash.feed.unavailable")} />}
+            ) : <Dead />}
           </Card>
 
-          {/* Currency */}
-          <Card title={t("dash.exchange")} icon="💷" live={Boolean(rates)} t={t}>
+          <Card title="Exchange (→ ₺)" icon="💷" live={Boolean(rates)}>
             {rates ? (
               <div className="space-y-1 text-sm">
                 <p className="flex justify-between"><span className="text-white/70">£1 GBP</span><span>₺{rates.GBP.toFixed(2)}</span></p>
                 <p className="flex justify-between"><span className="text-white/70">€1 EUR</span><span>₺{rates.EUR.toFixed(2)}</span></p>
                 <p className="flex justify-between"><span className="text-white/70">$1 USD</span><span>₺{rates.USD.toFixed(2)}</span></p>
               </div>
-            ) : <Dead label={t("dash.feed.unavailable")} />}
+            ) : <Dead />}
             <ExchangeButton />
           </Card>
 
-          {/* Earthquakes */}
-          <Card title={t("dash.quakes")} icon="🌍" live={Boolean(quakes)} t={t} className="col-span-2 md:col-span-1">
+          <Card title="Quakes (250 km)" icon="🌍" live={Boolean(quakes)} className="col-span-2 md:col-span-1">
             {quakes ? (
               <>
                 {quakes.list.length === 0 ? (
-                  <p className="text-sm text-white/70">{t("dash.quakes.none")}</p>
+                  <p className="text-sm text-white/70">Nothing notable.</p>
                 ) : (
                   <div className="space-y-1 text-sm">
                     {quakes.list.slice(0, 3).map((q, i) => (
                       <div key={i} className="flex justify-between gap-2">
                         <span className="flex items-baseline gap-1.5 min-w-0">
                           <span className={`font-semibold shrink-0 ${q.mag >= 4 ? "text-amber-200" : "text-white"}`}>M{q.mag.toFixed(1)}</span>
-                          <span className="text-white/70 truncate text-[13px]">{q.place || t("dash.quakes.nearby")}</span>
+                          <span className="text-white/70 truncate text-[13px]">{q.place || "nearby"}</span>
                         </span>
                         <span className="text-white/60 text-[11px] shrink-0">{timeAgo(new Date(q.time).toISOString())}</span>
                       </div>
@@ -168,12 +157,11 @@ export function Dashboard({ weather, air, airCompare, prayer, rates, quakes, t }
                 )}
                 <p className="text-[11px] text-white/60 mt-2 pt-2 border-t border-white/20">USGS</p>
               </>
-            ) : <Dead label={t("dash.feed.unavailable")} />}
+            ) : <Dead />}
           </Card>
         </div>
       </div>
 
-      {/* Salda TV — its own tile below the sky */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
         <LiveCam />
       </div>
