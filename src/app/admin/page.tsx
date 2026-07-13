@@ -6,7 +6,7 @@ import { CATEGORIES } from "@/lib/categories";
 import { removeContent, clearFlag, editPost, editPhoto, markEmailRead, deleteEmail } from "./actions";
 import OpsRobot from "@/components/OpsRobot";
 import RobotButton from "@/components/RobotButton";
-import { Card, timeAgo } from "@/components/ui";
+import { timeAgo } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
