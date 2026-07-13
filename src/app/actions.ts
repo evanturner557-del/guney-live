@@ -74,7 +74,7 @@ export async function updateProfile(formData: FormData) {
   const phone = String(formData.get("phone") || "").trim();
   if (!name) return;
   await supabase.from("profiles").upsert({ id: user.id, name, bio: bio || null, connection, skills: skills || null, phone: phone || null });
-  revalidatePath("/members"); revalidatePath("/dashboard");
+  revalidatePath("/community"); revalidatePath("/join");
 }
 
 export async function createListing(formData: FormData) {
