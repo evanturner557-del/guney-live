@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createOpportunity } from "@/app/actions";
-import { Md, oppTypeLabel, PageHeader, Card } from "@/components/ui";
+import { Md, oppTypeLabel, PageHeader } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -45,8 +45,7 @@ export default async function OpportunitiesPage({ searchParams }: { searchParams
       <div className="space-y-4 mt-8">
         {(opps ?? []).length === 0 && <p className="text-faded text-sm py-8">No open opportunities in this category yet.</p>}
         {(opps ?? []).map((o) => (
-          <Card key={o.id} className="p-0 overflow-hidden">
-            <details className="group">
+          <details key={o.id} className="bg-white rounded-xl border border-sand group">
               <summary className="cursor-pointer p-5 select-none list-none">
                 <span className="text-xs font-medium text-terra-deep">{oppTypeLabel[o.type] ?? o.type}</span>
                 {o.status === "in_progress" && (
@@ -65,8 +64,7 @@ export default async function OpportunitiesPage({ searchParams }: { searchParams
                   </p>
                 )}
               </div>
-            </details>
-          </Card>
+          </details>
         ))}
       </div>
     </div>
