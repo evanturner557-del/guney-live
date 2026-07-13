@@ -48,7 +48,7 @@ export async function editPhoto(formData: FormData) {
   const category = String(formData.get("category") || "").trim();
   if (!id) return;
   await supabase.from("photos").update({ caption: caption || null, category }).eq("id", id);
-  revalidatePath("/admin"); revalidatePath("/gallery");
+  revalidatePath("/admin"); revalidatePath("/guide");
 }
 
 export async function markEmailRead(formData: FormData) {
