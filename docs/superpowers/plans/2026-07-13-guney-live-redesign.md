@@ -1791,6 +1791,14 @@ git commit -m "Confirm /admin already matches the shared design system; import C
 
 ## Task 11: Grok-generated visuals
 
+> **SKIPPED (2026-07-13):** all 7 `grok-mcp` image-generation calls failed with
+> `PERMISSION_DENIED` — the xAI account is over its spend cap/out of credits.
+> Evan chose to ship without AI visuals rather than switch engines or wait on
+> billing. Home keeps the existing `HeroSlideshow` (member-uploaded photos +
+> gradient fallback, unchanged from before this plan); Guide ships without a
+> header illustration. `public/village/` was never created in the shipped
+> tree. Revisit this task standalone once the xAI billing issue is resolved.
+
 **Files:**
 - Create: `public/village/hero-1.jpg` … `public/village/hero-6.jpg` (6 files)
 - Create: `public/village/guide-3d.jpg` (1 file)
