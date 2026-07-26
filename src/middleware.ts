@@ -21,7 +21,18 @@ export async function middleware(request: NextRequest) {
       },
     }
   );
-  await supabase.auth.getUser();
+  // Fail-open: if Supabase is unreachable (paused/deleted project, outage),
+  // serve the page instead of hanging until Vercel's middleware timeout (504).
+  try {
+    await Promise.race([
+      supabase.auth.getUser(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("auth timeout")), 3000)
+      ),
+    ]);
+  } catch {
+    // session refresh skipped; page still renders
+  }
   return response;
 }
 
