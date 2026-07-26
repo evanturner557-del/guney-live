@@ -19,7 +19,7 @@ export default function ChatRoom({ userId, name }: { userId: string | null; name
       .then(({ data }) => { if (active) { setMsgs((data ?? []) as Msg[]); setLoading(false); } });
 
     const ch = supabase.channel("room:square")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: "room=eq.square" },
+      .on("postgres_changes", { event: "INSERT", schema: "guney", table: "messages", filter: "room=eq.square" },
         (payload) => setMsgs((m) => [...m, payload.new as Msg]))
       .subscribe();
     return () => { active = false; supabase.removeChannel(ch); };
