@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const BASE = "http://localhost:3000";
+const BASE = process.env.E2E_BASE ?? "http://127.0.0.1:3000";
 
 test.describe("Public navigation", () => {
   test("nav links resolve, no console errors", async ({ page }) => {

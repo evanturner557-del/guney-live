@@ -12,7 +12,11 @@ export default function HeroSlideshow({ images }: { images: string[] }) {
   }, [images.length]);
 
   if (images.length === 0)
-    return <div className="w-full h-full bg-gradient-to-b from-sage to-olive" />;
+    return (
+      <div className="w-full h-full" style={{
+        background: "linear-gradient(to bottom, #cfd8c6 0%, #a9b493 45%, #56653f 100%)",
+      }} />
+    );
 
   return (
     <div className="w-full h-full">

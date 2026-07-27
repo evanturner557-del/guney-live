@@ -1,15 +1,18 @@
 @import "tailwindcss";
 
 @theme {
-  --color-cream: #faf6ef;
-  --color-sand: #f0e9db;
-  --color-ink: #2b2721;
-  --color-faded: #6f6759;
-  --color-olive: #5c6b3f;
-  --color-olive-deep: #43512c;
-  --color-terra: #b85c38;
-  --color-terra-deep: #9a4527;
-  --color-sage: #aab894;
+  /* Near-monochrome village palette: stone, olive, forest, cream, earth —
+     with a single accent drawn from Lake Salda's water (the historical
+     terracotta accent was retired; the terra tokens now carry the lake). */
+  --color-cream: #f7f4ec;
+  --color-sand: #e9e3d4;
+  --color-ink: #26241f;
+  --color-faded: #6d675a;
+  --color-olive: #56653f;
+  --color-olive-deep: #333f26;
+  --color-terra: #1d6b66;
+  --color-terra-deep: #14524e;
+  --color-sage: #a9b493;
   --font-display: "Fraunces", Georgia, serif;
   --font-body: "Inter", system-ui, sans-serif;
 }
@@ -23,6 +26,28 @@ body {
 
 h1, h2, h3, .display {
   font-family: var(--font-display);
+}
+
+/* Editorial voice: italic serif whisper replaces uppercase tracking labels */
+.whisper {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Soft scroll reveal — driven by the <Reveal> component */
+.reveal { opacity: 0; transform: translateY(16px); transition: opacity .8s ease, transform .8s ease; }
+.reveal.in { opacity: 1; transform: none; }
+.reveal-slow { transition-duration: 1.2s; }
+
+/* Hero settles in on load */
+.hero-enter { animation: hero-enter 1.2s ease both; }
+.hero-enter-late { animation: hero-enter 1.2s ease .35s both; }
+@keyframes hero-enter { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .hero-enter, .hero-enter-late { animation: none; }
 }
 
 .prose-md p { margin-bottom: 0.75rem; line-height: 1.65; }

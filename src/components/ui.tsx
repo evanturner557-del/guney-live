@@ -2,7 +2,7 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 
 export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`rounded-2xl border border-sand bg-white p-5 ${className}`}>{children}</div>;
+  return <div className={`rounded-2xl bg-white/70 p-5 ${className}`}>{children}</div>;
 }
 
 export function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {

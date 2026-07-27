@@ -1,185 +1,198 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Badge, timeAgo, fmtEventDate, authorOf, oppTypeLabel, type Post } from "@/components/ui";
+import { Badge, timeAgo, authorOf, oppTypeLabel, type Post } from "@/components/ui";
 import HeroSlideshow from "@/components/HeroSlideshow";
 import VillageMap from "@/components/VillageMap";
-import { getWeather, getPrayer, wmoIcon, wmoLabel } from "@/lib/village";
+import Reveal from "@/components/Reveal";
+import { getWeather, getPrayer, wmoLabel } from "@/lib/village";
 
 export const revalidate = 1800;
 
-const explore = [
-  { href: "/guide#getting-here", icon: "🧭", title: "Getting here", body: "Where Güney is and how to reach it — 8 km from Lake Salda." },
-  { href: "/guide#staying", icon: "🛏️", title: "Stay", body: "Beds, food, and what to do when you're here." },
-  { href: "/guide#living", icon: "🏡", title: "Living here", body: "Internet, healthcare, property, and the rhythm of the seasons." },
-  { href: "/guide#nature", icon: "🌿", title: "Nature", body: "Lake Salda and the landscape that surrounds the village." },
-  { href: "/guide#photos", icon: "📷", title: "In pictures", body: "The village as it actually looks, place by place." },
-  { href: "#map", icon: "🗺️", title: "The map", body: "Every landmark, road, and place worth knowing." },
+const doors = [
+  { href: "/guide", title: "The place", body: "Stone houses, vineyards, and the clearest lake in Türkiye eight kilometres up the road." },
+  { href: "/community", title: "The people", body: "Villagers, diaspora, and the newly arrived — talking to each other every day." },
+  { href: "/community/opportunities", title: "The work", body: "Houses waiting to be restored, land waiting to be farmed, ideas waiting for hands." },
 ];
+
+// One quiet sentence composed from live data — the village speaks, no widgets.
+function livingLine(weather: Awaited<ReturnType<typeof getWeather>>, prayer: Awaited<ReturnType<typeof getPrayer>>) {
+  const hour = Number(new Date().toLocaleTimeString("en-GB", { timeZone: "Europe/Istanbul", hour: "2-digit", hour12: false }));
+  const daypart = hour < 6 ? "Tonight" : hour < 12 ? "This morning" : hour < 18 ? "This afternoon" : hour < 22 ? "This evening" : "Tonight";
+  const parts: string[] = [];
+  if (weather) parts.push(`${daypart} in Güney it is ${wmoLabel(weather.now.code).toLowerCase()} at ${Math.round(weather.now.temp)}°.`);
+  if (prayer) {
+    const t = prayer.timings.find((p) => p.name === prayer.next)?.time;
+    if (t) parts.push(`${prayer.next} is at ${t}.`);
+  }
+  return parts.join(" ");
+}
 
 export default async function Home() {
   const supabase = await createClient();
-  const [weather, prayer, postsRes, eventRes, oppsRes, featRes] = await Promise.all([
+  const [weather, prayer, postsRes, oppsRes, featRes] = await Promise.all([
     getWeather(), getPrayer(),
     supabase.from("posts").select("*, profiles(name)").order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(3),
-    supabase.from("posts").select("*, profiles(name)").eq("type", "event").gte("event_date", new Date().toISOString()).order("event_date", { ascending: true }).limit(1),
     supabase.from("opportunities").select("*").eq("status", "open").order("created_at", { ascending: false }).limit(2),
     supabase.from("photos").select("url").eq("featured", true).order("sort"),
   ]);
 
   const posts = (postsRes.data ?? []) as Post[];
-  const nextEvent = ((eventRes.data ?? []) as Post[])[0];
   const opps = oppsRes.data ?? [];
   const heroImages = (featRes.data ?? []).map((r) => r.url as string);
-  const latest = posts[0];
+  const line = livingLine(weather, prayer);
 
   return (
     <div>
-      {/* Welcome */}
-      <section className="relative">
-        <div className="absolute inset-0 -z-10 overflow-hidden">
+      {/* Wonder */}
+      <section className="relative -mt-14">
+        <div className="absolute inset-0 overflow-hidden">
           <HeroSlideshow images={heroImages} />
-          <div className="absolute inset-0 bg-gradient-to-b from-cream/20 via-cream/35 to-cream" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-black/25" />
         </div>
-        <div className="mx-auto max-w-5xl px-4 min-h-[68vh] flex flex-col items-center justify-center text-center py-20">
-          <p className="text-sm tracking-widest uppercase text-terra-deep mb-3">Yeşilova · Burdur · Türkiye</p>
-          <h1 className="display text-4xl sm:text-6xl font-semibold text-olive-deep leading-tight drop-shadow-sm">
-            Welcome to Güney.
-          </h1>
-          <p className="mt-5 max-w-xl mx-auto text-lg text-ink/80">
-            A 900-year-old village rebuilding itself with the world.
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link href="/guide" className="px-7 py-3.5 rounded-full bg-terra text-cream font-medium hover:bg-terra-deep transition-colors shadow-sm">Visit</Link>
-            <Link href="/join" className="px-7 py-3.5 rounded-full bg-white/80 backdrop-blur border border-olive text-olive-deep font-medium hover:bg-white transition-colors">Join</Link>
+        <div className="relative mx-auto max-w-6xl px-6 min-h-[92svh] flex flex-col justify-end pb-16 pt-32">
+          <div className="max-w-2xl hero-enter">
+            <p className="whisper text-cream/85 text-lg">Yeşilova · Burdur · Türkiye</p>
+            <h1 className="display text-5xl sm:text-7xl font-medium text-cream leading-[1.05] mt-3">
+              Welcome to Güney.
+            </h1>
+            <p className="mt-5 text-xl text-cream/90 max-w-lg leading-relaxed">
+              A 900-year-old village rebuilding itself with the world.
+            </p>
           </div>
+          <div className="mt-9 flex items-center gap-6 hero-enter-late">
+            <Link href="/guide" className="px-8 py-4 rounded-full bg-cream text-ink font-medium hover:bg-white transition-colors">
+              Visit the village
+            </Link>
+            <Link href="/join" className="text-cream/85 hover:text-cream underline underline-offset-4 decoration-cream/40 transition-colors">
+              or join from afar
+            </Link>
+          </div>
+          {line && <p className="whisper text-cream/70 mt-10 text-[17px] hero-enter-late">{line}</p>}
         </div>
       </section>
 
-      <div className="mx-auto max-w-5xl px-4">
-        {/* Today — one card, like walking into the square */}
-        <section className="mt-6">
-          <div className="rounded-3xl bg-white border border-sand p-6 sm:p-8">
-            <div className="flex items-baseline justify-between flex-wrap gap-2">
-              <h2 className="display text-2xl font-semibold text-olive-deep">Today in the village</h2>
-              <Link href="/guide#now" className="text-sm text-terra hover:underline">Live dashboard →</Link>
-            </div>
-            <div className="mt-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 text-[15px]">
-              <p className="flex items-center gap-2.5">
-                <span className="text-2xl">{weather ? wmoIcon(weather.now.code, weather.now.isDay) : "⛅"}</span>
-                <span>{weather ? <>{Math.round(weather.now.temp)}° · {wmoLabel(weather.now.code)}</> : "Weather offline"}</span>
-              </p>
-              <p className="flex items-center gap-2.5">
-                <span className="text-2xl">🕌</span>
-                <span>{prayer ? <>Next prayer · {prayer.next} {prayer.timings.find((t) => t.name === prayer.next)?.time}</> : "Prayer times offline"}</span>
-              </p>
-              <p className="flex items-center gap-2.5 min-w-0">
-                <span className="text-2xl">📅</span>
-                {nextEvent ? (
-                  <Link href={`/community/${nextEvent.id}`} className="truncate hover:text-terra transition-colors">
-                    {fmtEventDate(nextEvent.event_date!)} · {nextEvent.title}
-                  </Link>
-                ) : <span className="text-faded">No events planned yet</span>}
-              </p>
-              <p className="flex items-center gap-2.5 min-w-0">
-                <span className="text-2xl">🗣️</span>
-                {latest ? (
-                  <Link href={`/community/${latest.id}`} className="truncate hover:text-terra transition-colors">{latest.title}</Link>
-                ) : <span className="text-faded">Quiet on the square</span>}
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Discover */}
-        <section className="mt-20">
-          <h2 className="display text-3xl font-semibold text-olive-deep text-center">Explore the village</h2>
-          <p className="text-faded text-center mt-2 max-w-md mx-auto">Every card opens into its own corner of Güney.</p>
-          <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {explore.map((c) => (
-              <Link key={c.title} href={c.href}>
-                <div className="rounded-3xl bg-white border border-sand p-7 h-full hover:border-sage hover:-translate-y-0.5 transition-all">
-                  <span className="text-3xl">{c.icon}</span>
-                  <h3 className="display text-xl font-semibold text-olive-deep mt-3">{c.title}</h3>
-                  <p className="text-sm text-faded mt-1.5 leading-relaxed">{c.body}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-          <div id="map" className="mt-8 scroll-mt-20">
-            <VillageMap />
-          </div>
-        </section>
-
-        {/* Meet */}
-        <section className="mt-20">
-          <h2 className="display text-3xl font-semibold text-olive-deep text-center">The people</h2>
-          <p className="text-faded text-center mt-2 max-w-md mx-auto">Villagers, diaspora, visitors, builders — what they&apos;re saying now.</p>
-          <div className="mt-8 max-w-2xl mx-auto rounded-3xl bg-white border border-sand px-7 py-4">
-            {posts.length === 0 ? (
-              <p className="text-sm text-faded py-4">Nothing posted yet — be the first voice.</p>
-            ) : posts.map((p) => (
-              <Link key={p.id} href={`/community/${p.id}`} className="flex items-start gap-3 py-3.5 border-b border-sand last:border-0 hover:text-terra transition-colors">
-                <Badge type={p.type} />
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium leading-snug truncate">{p.title}</p>
-                  <p className="text-xs text-faded mt-0.5">{authorOf(p)} · {timeAgo(p.created_at)}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-          <p className="text-center mt-6">
-            <Link href="/community" className="px-6 py-3 rounded-full bg-olive text-cream text-sm font-medium hover:bg-olive-deep transition-colors">Step into the community</Link>
+      {/* Curiosity */}
+      <section className="mx-auto max-w-4xl px-6 py-32 sm:py-40 text-center">
+        <Reveal slow>
+          <p className="display text-3xl sm:text-[2.75rem] leading-snug text-olive-deep font-medium">
+            Nine hundred years of stone, vines and weather.
+            <span className="whisper text-faded"> The people who kept it are now opening it to the world.</span>
           </p>
-        </section>
+        </Reveal>
+      </section>
 
-        {/* Participate */}
-        {opps.length > 0 && (
-          <section className="mt-20">
-            <h2 className="display text-3xl font-semibold text-olive-deep text-center">Open doors</h2>
-            <p className="text-faded text-center mt-2 max-w-md mx-auto">Stone houses to restore, land to farm, work waiting for hands.</p>
-            <div className="mt-8 grid sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
-              {opps.map((o) => (
-                <Link key={o.id} href="/community/opportunities">
-                  <div className="rounded-3xl bg-white border border-sand p-7 h-full hover:border-sage hover:-translate-y-0.5 transition-all">
-                    <span className="text-[11px] font-medium text-terra-deep uppercase tracking-wide">{oppTypeLabel[o.type] ?? o.type}</span>
-                    <h3 className="display text-lg font-semibold text-olive-deep leading-snug mt-1">{o.title}</h3>
-                    <p className="text-sm text-faded mt-2 line-clamp-2">{o.summary}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-            <p className="text-center mt-6">
-              <Link href="/community/opportunities" className="text-sm text-terra hover:underline">See every open door →</Link>
-            </p>
-          </section>
-        )}
+      {/* Three doors */}
+      <section className="mx-auto max-w-6xl px-6">
+        <div className="grid md:grid-cols-3 gap-6">
+          {doors.map((d, i) => (
+            <Reveal key={d.title} className={i === 1 ? "md:mt-10" : ""}>
+              <Link href={d.href} className="group block rounded-[2rem] bg-sand/50 hover:bg-sand transition-colors p-10 h-full">
+                <h2 className="display text-3xl font-medium text-olive-deep">{d.title}</h2>
+                <p className="mt-4 text-faded leading-relaxed">{d.body}</p>
+                <p className="mt-8 text-terra group-hover:translate-x-1 transition-transform inline-block" aria-hidden>⟶</p>
+              </Link>
+            </Reveal>
+          ))}
+        </div>
+      </section>
 
-        {/* Belong */}
-        <section className="my-20">
-          <div className="rounded-3xl bg-olive-deep text-cream px-7 py-12 sm:px-12 sm:py-16 text-center">
-            <h2 className="display text-3xl sm:text-4xl font-semibold">Become part of Güney</h2>
-            <p className="mt-3 text-cream/80 max-w-lg mx-auto">However you arrive — for a weekend, for good, or from afar — there is a place for you here.</p>
-            <div className="mt-8 grid sm:grid-cols-3 gap-4 max-w-2xl mx-auto text-left">
-              {[
-                { href: "/guide", icon: "🧳", title: "Visit", body: "Come and see it with your own eyes." },
-                { href: "/join", icon: "🏡", title: "Move", body: "Make the village your home." },
-                { href: "/community/opportunities", icon: "🔨", title: "Help build", body: "Lend your hands or your skills." },
-              ].map((c) => (
-                <Link key={c.title} href={c.href}>
-                  <div className="rounded-2xl bg-cream/10 hover:bg-cream/20 transition-colors p-5 h-full">
-                    <span className="text-2xl">{c.icon}</span>
-                    <h3 className="display text-lg font-semibold mt-2">{c.title}</h3>
-                    <p className="text-sm text-cream/75 mt-1">{c.body}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-            <p className="mt-10">
-              <Link href="/join" className="inline-block px-8 py-3.5 rounded-full bg-terra text-cream font-medium hover:bg-terra-deep transition-colors">Join the village</Link>
-            </p>
+      {/* Walk it */}
+      <section className="mx-auto max-w-6xl px-6 pt-32 sm:pt-40">
+        <Reveal>
+          <p className="whisper text-terra text-lg">Eight kilometres from Lake Salda</p>
+          <h2 className="display text-4xl sm:text-5xl font-medium text-olive-deep mt-2 max-w-xl">Walk it from here.</h2>
+        </Reveal>
+        <Reveal slow className="mt-10">
+          <div className="rounded-[2rem] overflow-hidden">
+            <VillageMap height={440} />
           </div>
+        </Reveal>
+      </section>
+
+      {/* Trust — real voices */}
+      <section className="mx-auto max-w-3xl px-6 pt-32 sm:pt-40">
+        <Reveal>
+          <p className="whisper text-terra text-lg text-center">From the square</p>
+          <h2 className="display text-4xl sm:text-5xl font-medium text-olive-deep mt-2 text-center">What the village is saying</h2>
+        </Reveal>
+        <Reveal className="mt-12">
+          {posts.length === 0 ? (
+            <p className="text-center text-faded">The square is quiet right now — the first word could be yours.</p>
+          ) : (
+            <div>
+              {posts.map((p) => (
+                <Link key={p.id} href={`/community/${p.id}`} className="group flex items-baseline gap-4 py-5 border-b border-sand last:border-0">
+                  <div className="min-w-0 flex-1">
+                    <p className="display text-xl text-ink group-hover:text-terra transition-colors leading-snug">{p.title}</p>
+                    <p className="text-sm text-faded mt-1">{authorOf(p)} · {timeAgo(p.created_at)}</p>
+                  </div>
+                  <Badge type={p.type} />
+                </Link>
+              ))}
+            </div>
+          )}
+          <p className="text-center mt-10">
+            <Link href="/community" className="text-terra underline underline-offset-4 decoration-terra/30 hover:decoration-terra transition-colors">
+              Step into the community
+            </Link>
+          </p>
+        </Reveal>
+      </section>
+
+      {/* Participate */}
+      {opps.length > 0 && (
+        <section className="mx-auto max-w-4xl px-6 pt-32 sm:pt-40">
+          <Reveal>
+            <p className="whisper text-terra text-lg text-center">Where money meets meaning</p>
+            <h2 className="display text-4xl sm:text-5xl font-medium text-olive-deep mt-2 text-center">Open doors</h2>
+          </Reveal>
+          <div className="mt-12 grid sm:grid-cols-2 gap-6">
+            {opps.map((o) => (
+              <Reveal key={o.id}>
+                <Link href="/community/opportunities" className="group block rounded-[2rem] bg-sand/50 hover:bg-sand transition-colors p-10 h-full">
+                  <p className="whisper text-terra">{oppTypeLabel[o.type] ?? o.type}</p>
+                  <h3 className="display text-2xl font-medium text-olive-deep leading-snug mt-2">{o.title}</h3>
+                  <p className="text-faded mt-3 line-clamp-2 leading-relaxed">{o.summary}</p>
+                </Link>
+              </Reveal>
+            ))}
+          </div>
+          <Reveal>
+            <p className="text-center mt-10">
+              <Link href="/community/opportunities" className="text-terra underline underline-offset-4 decoration-terra/30 hover:decoration-terra transition-colors">
+                See every open door
+              </Link>
+            </p>
+          </Reveal>
         </section>
-      </div>
+      )}
+
+      {/* Belonging → action */}
+      <section className="mt-32 sm:mt-40 bg-olive-deep">
+        <div className="mx-auto max-w-4xl px-6 py-28 sm:py-36 text-center">
+          <Reveal slow>
+            <p className="whisper text-sage text-lg">However you arrive</p>
+            <h2 className="display text-4xl sm:text-6xl font-medium text-cream mt-3 leading-tight">
+              There is a place for you here.
+            </h2>
+            <p className="mt-6 text-cream/70 max-w-md mx-auto leading-relaxed">
+              Come for a weekend. Come for good. Or help from wherever you are — the village counts all of it.
+            </p>
+            <p className="mt-12">
+              <Link href="/join" className="inline-block px-10 py-4 rounded-full bg-cream text-olive-deep font-medium hover:bg-white transition-colors">
+                Join the village
+              </Link>
+            </p>
+            <p className="mt-8 text-sm text-cream/50">
+              <Link href="/guide" className="hover:text-cream/80 transition-colors underline underline-offset-4 decoration-cream/20">Plan a visit</Link>
+              <span className="mx-3">·</span>
+              <Link href="/community/opportunities" className="hover:text-cream/80 transition-colors underline underline-offset-4 decoration-cream/20">Restore a house</Link>
+              <span className="mx-3">·</span>
+              <Link href="/community" className="hover:text-cream/80 transition-colors underline underline-offset-4 decoration-cream/20">Just say hello</Link>
+            </p>
+          </Reveal>
+        </div>
+      </section>
     </div>
   );
 }
