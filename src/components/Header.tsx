@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "@/app/actions";
 
 const links = [
-  { href: "/guide", label: "Guide" },
+  { href: "/guide", label: "Village" },
   { href: "/community", label: "Community" },
   { href: "/join", label: "Join" },
 ];

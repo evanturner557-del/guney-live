@@ -3,6 +3,8 @@ import { Md, PageHeader } from "@/components/ui";
 import { NavCard, NavSection, NavAnchor } from "@/components/SideNav";
 import CategoryCovers, { type CatStat } from "@/components/CategoryCovers";
 import { CATEGORIES } from "@/lib/categories";
+import { Dashboard } from "@/components/Dashboard";
+import { getWeather, getAir, getAirCompare, getPrayer, getRates, getQuakes } from "@/lib/village";
 
 const catIcon: Record<string, string> = {
   "getting-here": "🧭", staying: "🛏️", living: "🏡", nature: "🌿", services: "☎️", faq: "❓",
@@ -17,13 +19,14 @@ const catMeta: Record<string, { title: string; blurb: string }> = {
 };
 const catOrder = ["getting-here", "staying", "living", "nature", "services", "faq"];
 
-export const revalidate = 3600;
+export const revalidate = 1800;
 
 export default async function GuidePage() {
   const supabase = await createClient();
-  const [{ data: articleRows }, { data: photoRows }] = await Promise.all([
+  const [{ data: articleRows }, { data: photoRows }, weather, air, airCompare, prayer, rates, quakes] = await Promise.all([
     supabase.from("guide_articles").select("*").order("category").order("sort"),
     supabase.from("photos").select("category, url, created_at").order("created_at", { ascending: false }),
+    getWeather(), getAir(), getAirCompare(), getPrayer(), getRates(), getQuakes(),
   ]);
   const articles = articleRows ?? [];
   const byCat = catOrder
@@ -42,7 +45,7 @@ export default async function GuidePage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       <div className="max-w-2xl">
-        <PageHeader title="The Guide" subtitle="Everything practical about visiting and living in Güney, and the village in pictures — no marketing, just what's useful." />
+        <PageHeader title="The Village" subtitle="Everything about Güney — what it's doing right now, the practical guide, and the village in pictures. No marketing, just what's useful." />
         <p className="mt-3">
           <a href="https://www.google.com/maps/search/?api=1&query=G%C3%BCney%2C+Ye%C5%9Filova%2C+Burdur" target="_blank" rel="noopener noreferrer" className="text-sm text-terra hover:underline">
             Open Güney in Google Maps →
@@ -50,10 +53,15 @@ export default async function GuidePage() {
         </p>
       </div>
 
+      <div id="now" className="scroll-mt-20">
+        <Dashboard weather={weather} air={air} airCompare={airCompare} prayer={prayer} rates={rates} quakes={quakes} />
+      </div>
+
       <div className="grid md:grid-cols-[200px_1fr] gap-6 mt-10">
         <nav className="hidden md:block sticky top-20 self-start w-full">
           <NavCard>
             <NavSection icon="📖" title="Guide">
+              <NavAnchor href="#now" icon="📡" label="Right now" />
               {byCat.map((g) => (
                 <NavAnchor key={g.cat} href={`#${g.cat}`} icon={catIcon[g.cat] ?? "•"} label={catMeta[g.cat].title} />
               ))}
