@@ -10,7 +10,7 @@ export default function ChatRoom({ userId, name }: { userId: string | null; name
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
-  const endRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -26,7 +26,12 @@ export default function ChatRoom({ userId, name }: { userId: string | null; name
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs.length]);
+  // Scroll only the message list, never the page — scrollIntoView here used to
+  // drag the whole viewport down and hide the nav on load.
+  useEffect(() => {
+    const el = listRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, [msgs.length]);
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
@@ -42,7 +47,7 @@ export default function ChatRoom({ userId, name }: { userId: string | null; name
       <p className="text-faded mt-1 text-sm">The village chat — everyone&apos;s here. Live, all at once.</p>
 
       <div className="mt-5 bg-white rounded-xl border border-sand flex flex-col" style={{ height: "60vh" }}>
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-3">
           {loading && <p className="text-sm text-faded">Connecting…</p>}
           {!loading && msgs.length === 0 && <p className="text-sm text-faded">No messages yet — say hello 👋</p>}
           {msgs.map((m) => {
@@ -59,7 +64,6 @@ export default function ChatRoom({ userId, name }: { userId: string | null; name
               </div>
             );
           })}
-          <div ref={endRef} />
         </div>
         {userId ? (
           <form onSubmit={send} className="border-t border-sand p-3 flex gap-2">

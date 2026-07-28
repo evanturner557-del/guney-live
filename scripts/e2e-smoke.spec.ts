@@ -29,14 +29,16 @@ test.describe("Public navigation", () => {
   });
 
   test("community tabs switch correctly", async ({ page }) => {
+    // Scope to <main>: the header nav also carries an "Opportunities" link.
+    const tabs = (name: string) => page.getByRole("main").getByRole("link", { name });
     await page.goto(`${BASE}/community`);
-    await page.getByRole("link", { name: "Chat" }).click();
+    await tabs("Chat").click();
     await expect(page).toHaveURL(/\/community\/chat/);
-    await page.getByRole("link", { name: "Marketplace" }).click();
+    await tabs("Marketplace").click();
     await expect(page).toHaveURL(/\/community\/marketplace/);
-    await page.getByRole("link", { name: "Opportunities" }).click();
+    await tabs("Opportunities").click();
     await expect(page).toHaveURL(/\/community\/opportunities/);
-    await page.getByRole("link", { name: "Feed" }).click();
+    await tabs("Feed").click();
     await expect(page).toHaveURL(/\/community$/);
   });
 
